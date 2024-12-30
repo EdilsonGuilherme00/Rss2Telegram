@@ -92,7 +92,7 @@ def send_message(topic, button):
 
     if TELEGRAPH_TOKEN:
         iv_link = create_telegraph_post(topic)
-        MESSAGE_TEMPLATE = f'<a href="{iv_link}">󠀠</a>{MESSAGE_TEMPLATE}'
+        MESSAGE_TEMPLATE = f'<a href="{iv_link}"></a>{MESSAGE_TEMPLATE}'
 
     if not firewall(str(topic)):
         print(f'xxx {topic["title"]}')
@@ -126,15 +126,24 @@ def send_message(topic, button):
 
 def get_img(url):
     try:
-        response = requests.get(url, headers = {'User-agent': 'Mozilla/5.1'}, timeout=3)
+        response = requests.get(url, headers={'User-agent': 'Mozilla/5.1'}, timeout=3)
         html = BeautifulSoup(response.content, 'html.parser')
-        photo = html.find('meta', {'property': 'og:image'})['content']
-    except TypeError:
+        
+        # Tenta extrair a imagem do <meta property="og:image">
+        photo = html.find('meta', {'property': 'og:image'})  # Busca pelo Open Graph meta tag
+        if photo:
+            return photo['content']
+        
+        # Caso não encontre o Open Graph, tenta extrair da tag <description> com conteúdo CDATA
+        description = html.find('description')
+        if description:
+            img_tag = re.search(r'<img src="(.*?)"', description.text)
+            if img_tag:
+                return img_tag.group(1)  # Retorna a URL da imagem
+        
+    except (TypeError, requests.exceptions.RequestException):
         photo = False
-    except requests.exceptions.ReadTimeout:
-        photo = False
-    except requests.exceptions.TooManyRedirects:
-        photo = False
+    
     return photo
 
 def define_link(link, PARAMETERS):
@@ -143,7 +152,6 @@ def define_link(link, PARAMETERS):
             return f'{link}&{PARAMETERS}'
         return f'{link}?{PARAMETERS}'
     return f'{link}'
-
 
 
 def set_text_vars(text, topic):
@@ -193,4 +201,3 @@ def check_topics(url):
 if __name__ == "__main__":
     for url in URL.split():
         check_topics(url)
-
