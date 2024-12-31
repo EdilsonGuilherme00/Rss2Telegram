@@ -2,7 +2,7 @@ import telebot
 import feedparser
 
 # Configurações
-BOT_TOKEN = "SEU_TOKEN_DO_BOT"
+BOT_TOKEN = "8130718516:AAF0Zsl-p9zqd9uYfRhOPHWcgP6BjzSdCaE"
 RSS_FEED_URL = "https://zonaproibida.com/category/todos/feed/"  # Substitua pelo URL do feed RSS do site
 bot = telebot.TeleBot(BOT_TOKEN)
 
