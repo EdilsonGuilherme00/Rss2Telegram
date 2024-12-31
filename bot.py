@@ -3,12 +3,13 @@ import feedparser
 
 # Configurações
 BOT_TOKEN = "SEU_TOKEN_DO_BOT"
-RSS_FEED_URL = "https://seusite.com/rss"  # Substitua pelo URL do feed RSS do site
+RSS_FEED_URL = "https://zonaproibida.com/category/todos/feed/"  # Substitua pelo URL do feed RSS do site
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # Comando /start
 @bot.message_handler(commands=['start'])
 def start(message):
+    print("Comando /start recebido")
     bot.send_message(
         message.chat.id,
         "Oi! Estou aqui para ajudar, o que deseja?"
@@ -17,6 +18,7 @@ def start(message):
 # Comando /pesquisa para buscar posts
 @bot.message_handler(commands=['pesquisa'])
 def search_rss(message):
+    print(f"Comando /pesquisa recebido: {message.text}")
     query = message.text.strip().replace('/pesquisa', '').strip().lower()
 
     # Verifica se a pesquisa está vazia
@@ -25,6 +27,7 @@ def search_rss(message):
         return
 
     # Obtém o feed RSS
+    print("Buscando no RSS Feed...")
     feed = feedparser.parse(RSS_FEED_URL)
 
     # Verifica se o feed é válido
@@ -48,4 +51,5 @@ def search_rss(message):
 
 # Inicializar o bot
 if __name__ == "__main__":
+    print("Bot iniciado")
     bot.polling()
