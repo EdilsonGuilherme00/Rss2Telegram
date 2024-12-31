@@ -1,33 +1,38 @@
 import telebot
 import feedparser
-import os
 
-# Configurações com variáveis de ambiente
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
-RSS_FEED_URL = os.environ.get("URL")  # URL do feed RSS
-DESTINATION = os.environ.get("DESTINATION", "").split(",")  # Chats de destino
-
+# Configurações
+BOT_TOKEN = "SEU_TOKEN_DO_BOT"
+RSS_FEED_URL = "https://seusite.com/rss"  # Substitua pelo URL do feed RSS do site
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # Comando /start
-@bot.message_handler(commands=["start"])
+@bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(
         message.chat.id,
-        "Olá! Envie uma palavra-chave para buscar posts no site."
+        "Oi! Estou aqui para ajudar, o que deseja?"
     )
 
-# Pesquisa por palavra-chave no RSS
-@bot.message_handler(func=lambda message: True)
+# Comando /pesquisa para buscar posts
+@bot.message_handler(commands=['pesquisa'])
 def search_rss(message):
-    query = message.text.strip().lower()
+    query = message.text.strip().replace('/pesquisa', '').strip().lower()
+
+    # Verifica se a pesquisa está vazia
+    if not query:
+        bot.send_message(message.chat.id, "Por favor, forneça um título ou palavra-chave para a pesquisa.")
+        return
+
+    # Obtém o feed RSS
     feed = feedparser.parse(RSS_FEED_URL)
 
-    if "entries" not in feed or not feed.entries:
+    # Verifica se o feed é válido
+    if 'entries' not in feed or not feed.entries:
         bot.send_message(message.chat.id, "Erro ao acessar o feed RSS. Tente novamente mais tarde.")
         return
 
-    # Filtra posts com base na palavra-chave
+    # Filtra os posts com base na palavra-chave
     results = []
     for entry in feed.entries:
         if query in entry.title.lower() or query in entry.summary.lower():
@@ -35,12 +40,12 @@ def search_rss(message):
 
     # Responde ao usuário
     if results:
-        reply = "\n\n".join(results[:10])  # Limita a 10 resultados
+        reply = "\n\n".join(results[:10])  # Limita a 10 resultados para evitar mensagens longas
     else:
         reply = "Não encontrei nenhum post relacionado à sua pesquisa."
 
     bot.send_message(message.chat.id, reply)
 
-# Inicializa o bot
+# Inicializar o bot
 if __name__ == "__main__":
     bot.polling()
