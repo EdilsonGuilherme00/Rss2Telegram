@@ -1,13 +1,16 @@
 import telebot
 import feedparser
+import os
 
-# Configurações
-BOT_TOKEN = "SEU_TOKEN_DO_BOT"
-RSS_FEED_URL = "https://seusite.com/rss"  # Substitua pelo URL do feed RSS do site
+# Configurações com variáveis de ambiente
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+RSS_FEED_URL = os.environ.get("URL")  # URL do feed RSS
+DESTINATION = os.environ.get("DESTINATION", "").split(",")  # Chats de destino
+
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # Comando /start
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=["start"])
 def start(message):
     bot.send_message(
         message.chat.id,
@@ -20,8 +23,7 @@ def search_rss(message):
     query = message.text.strip().lower()
     feed = feedparser.parse(RSS_FEED_URL)
 
-    # Verifica se o feed é válido
-    if 'entries' not in feed or not feed.entries:
+    if "entries" not in feed or not feed.entries:
         bot.send_message(message.chat.id, "Erro ao acessar o feed RSS. Tente novamente mais tarde.")
         return
 
@@ -33,12 +35,12 @@ def search_rss(message):
 
     # Responde ao usuário
     if results:
-        reply = "\n\n".join(results[:10])  # Limita a 10 resultados para evitar mensagens longas
+        reply = "\n\n".join(results[:10])  # Limita a 10 resultados
     else:
         reply = "Não encontrei nenhum post relacionado à sua pesquisa."
 
     bot.send_message(message.chat.id, reply)
 
-# Inicializar o bot
+# Inicializa o bot
 if __name__ == "__main__":
     bot.polling()
