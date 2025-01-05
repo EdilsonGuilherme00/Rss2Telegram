@@ -23,5 +23,5 @@ jobs:
 
     - name: Run the bot
       env:
-        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}  # Token do bot no Telegram
+        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}  # Token do bot no Telegram
       run: python bot.py
