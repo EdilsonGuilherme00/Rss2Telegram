@@ -8,7 +8,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # Configuração do bot
 def main():
     import os
-    TOKEN = os.getenv("TELEGRAM_TOKEN")  # O token será armazenado como variável de ambiente
+    TOKEN = os.getenv("BOT_TOKEN")  # O token será armazenado como variável de ambiente
     application = ApplicationBuilder().token(TOKEN).build()
 
     # Adiciona o handler para o comando /start
