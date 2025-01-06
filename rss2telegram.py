@@ -92,7 +92,7 @@ def send_message(topic, button):
 
     if TELEGRAPH_TOKEN:
         iv_link = create_telegraph_post(topic)
-        MESSAGE_TEMPLATE = f'<a href="{iv_link}">󠀠</a>{MESSAGE_TEMPLATE}'
+        MESSAGE_TEMPLATE = f'<a href="{iv_link}"></a>{MESSAGE_TEMPLATE}'
 
     if not firewall(str(topic)):
         print(f'xxx {topic["title"]}')
@@ -134,14 +134,13 @@ def get_img_from_feed(item):
     except Exception as e:
         print(f"Erro ao extrair imagem: {e}")
     return None
+
 def define_link(link, PARAMETERS):
     if PARAMETERS:
         if '?' in link:
             return f'{link}&{PARAMETERS}'
         return f'{link}?{PARAMETERS}'
     return f'{link}'
-
-
 
 def set_text_vars(text, topic):
     cases = {
@@ -157,7 +156,6 @@ def set_text_vars(text, topic):
         except TypeError:
             continue
     return text.replace('\\n', '\n').replace('{', '').replace('}', '')
-
 
 def check_topics(url):
     now = gmtime()
@@ -177,7 +175,7 @@ def check_topics(url):
         topic['title'] = tpc.title.strip()
         topic['summary'] = tpc.summary
         topic['link'] = tpc.links[0].href
-        topic['photo'] = get_img(tpc.links[0].href)
+        topic['photo'] = get_img_from_feed(tpc)  # Nova função de imagem
         BUTTON_TEXT = os.environ.get('BUTTON_TEXT', False)
         if BUTTON_TEXT:
             BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
