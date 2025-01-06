@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-from bs4 import BeautifulSoup
 from telebot import types
 from time import gmtime
 import feedparser
@@ -13,132 +12,179 @@ import requests
 import sqlite3
 
 def get_variable(variable):
-    """Obtém variáveis do ambiente ou arquivos locais."""
     if not os.environ.get(f'{variable}'):
-        with open(f'{variable}.txt', 'r') as var_file:
-            return var_file.read().strip()
+        var_file = open(f'{variable}.txt', 'r')
+        return var_file.read()
     return os.environ.get(f'{variable}')
 
 URL = get_variable('URL')
 DESTINATION = get_variable('DESTINATION')
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 EMOJIS = os.environ.get('EMOJIS', '🗞,📰,🗒,🗓,📋,🔗,📝,🗃')
+PARAMETERS = os.environ.get('PARAMETERS', False)
+HIDE_BUTTON = os.environ.get('HIDE_BUTTON', False)
 DRYRUN = os.environ.get('DRYRUN')
+TOPIC = os.environ.get('TOPIC', False)
+TELEGRAPH_TOKEN = os.environ.get('TELEGRAPH_TOKEN', False)
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
 def add_to_history(link):
-    """Adiciona um link ao histórico para evitar mensagens duplicadas."""
     conn = sqlite3.connect('rss2telegram.db')
     cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS history (link TEXT)')
-    cursor.execute('INSERT INTO history (link) VALUES (?)', (link,))
+    aux = f'INSERT INTO history (link) VALUES ("{link}")'
+    cursor.execute(aux)
     conn.commit()
     conn.close()
 
 def check_history(link):
-    """Verifica se o link já foi enviado."""
     conn = sqlite3.connect('rss2telegram.db')
     cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS history (link TEXT)')
-    cursor.execute('SELECT * FROM history WHERE link=?', (link,))
+    aux = f'SELECT * from history WHERE link="{link}"'
+    cursor.execute(aux)
     data = cursor.fetchone()
     conn.close()
     return data
 
-def extract_image_from_description(description):
-    """Extrai a URL da imagem da tag <description>."""
+def firewall(text):
     try:
-        img_tag = re.search(r'<img src="(.*?)"', description)
-        if img_tag:
-            return img_tag.group(1)  # Retorna a URL da imagem
-    except TypeError:
-        pass
-    return None  # Retorna None caso não encontre uma imagem
+        rules = open(f'RULES.txt', 'r')
+    except FileNotFoundError:
+        return True
+    result = None
+    for rule in rules.readlines():
+        opt, arg = rule.split(':')
+        arg = arg.strip()
+        if arg == 'ALL' and opt == 'DROP':
+            result = False
+        elif arg == 'ALL' and opt == 'ACCEPT':
+            result = True
+        elif arg.lower() in text.lower() and opt == 'DROP':
+            result = False
+        elif arg.lower() in text.lower() and opt == 'ACCEPT':
+            result = True
+    return result
 
-def extract_topic_data(item):
-    """Extrai os dados necessários de cada item do feed RSS."""
-    try:
-        title = item.find('title').text
-        link = item.find('link').text
-        author = item.find('dc:creator').text if item.find('dc:creator') else "Desconhecido"
-        description = item.find('description').text
+def create_telegraph_post(topic):
+    telegraph_auth = telegraph.Telegraph(
+        access_token=f'{get_variable("TELEGRAPH_TOKEN")}'
+    )
+    response = telegraph_auth.create_page(
+        f'{topic["title"]}',
+        html_content=(
+            f'{topic["summary"]}<br><br>'
+            + f'<a href="{topic["link"]}">Ver original ({topic["site_name"]})</a>'
+        ),
+        author_name=f'{topic["site_name"]}'
+    )
+    return response["url"]
 
-        # Extrair imagem da descrição
-        image = extract_image_from_description(description)
-
-        return {
-            'title': title.strip(),
-            'link': link.strip(),
-            'author': author.strip(),
-            'photo': image
-        }
-    except AttributeError as e:
-        print(f"Erro ao extrair dados do item: {e}")
-        return None
-
-def send_message(topic, button_text):
-    """Envia a mensagem formatada para o Telegram com imagem, título e botão."""
+def send_message(topic, button):
     if DRYRUN == 'failure':
         return
 
-    MESSAGE_TEMPLATE = f"<b>{topic['title']}</b>\n\nPor: {topic['author']}\n<a href='{topic['link']}'>Acesse o post completo</a>"
-    btn_link = types.InlineKeyboardMarkup()
-    btn = types.InlineKeyboardButton(button_text, url=topic['link'])
-    btn_link.row(btn)
+    MESSAGE_TEMPLATE = os.environ.get(f'MESSAGE_TEMPLATE', False)
 
-    for dest in DESTINATION.split(','):
-        if topic['photo']:
-            try:
-                response = requests.get(topic['photo'], headers={'User-agent': 'Mozilla/5.1'})
-                with open('img.jpg', 'wb') as f:
-                    f.write(response.content)
-                
-                with open('img.jpg', 'rb') as photo:
-                    bot.send_photo(
-                        dest,
-                        photo,
-                        caption=MESSAGE_TEMPLATE,
-                        parse_mode='HTML',
-                        reply_markup=btn_link
-                    )
-            except telebot.apihelper.ApiTelegramException as e:
-                print(f'Erro ao enviar imagem: {e}')
-                bot.send_message(
-                    dest,
-                    MESSAGE_TEMPLATE,
-                    parse_mode='HTML',
-                    reply_markup=btn_link
-                )
+    if MESSAGE_TEMPLATE:
+        MESSAGE_TEMPLATE = set_text_vars(MESSAGE_TEMPLATE, topic)
+    else:
+        MESSAGE_TEMPLATE = f'<b>{topic["title"]}</b>'
+
+    if TELEGRAPH_TOKEN:
+        iv_link = create_telegraph_post(topic)
+        MESSAGE_TEMPLATE = f'<a href="{iv_link}"></a>{MESSAGE_TEMPLATE}'
+
+    if not firewall(str(topic)):
+        print(f'xxx {topic["title"]}')
+        return
+
+    btn_link = button
+    if button:
+        btn_link = types.InlineKeyboardMarkup()
+        btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])
+        btn_link.row(btn)
+
+    if HIDE_BUTTON or TELEGRAPH_TOKEN:
+        for dest in DESTINATION.split(','):
+            bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_to_message_id=TOPIC)
+    else:
+        if topic['photo'] and not TELEGRAPH_TOKEN:
+            response = requests.get(topic['photo'], headers = {'User-agent': 'Mozilla/5.1'})
+            open('img', 'wb').write(response.content)
+            for dest in DESTINATION.split(','):
+                photo = open('img', 'rb')
+                try:
+                    bot.send_photo(dest, photo, caption=MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link, reply_to_message_id=TOPIC)
+                except telebot.apihelper.ApiTelegramException:
+                    topic['photo'] = False
+                    send_message(topic, button)
         else:
-            bot.send_message(
-                dest,
-                MESSAGE_TEMPLATE,
-                parse_mode='HTML',
-                reply_markup=btn_link
-            )
-        print(f'Mensagem enviada: {topic[\'title\']}')
+            for dest in DESTINATION.split(','):
+                bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link, disable_web_page_preview=True, reply_to_message_id=TOPIC)
+    print(f'... {topic["title"]}')
     time.sleep(0.2)
 
-def process_feed(feed_url):
-    """Processa o feed RSS, extrai os dados e envia mensagens."""
-    response = requests.get(feed_url)
-    soup = BeautifulSoup(response.content, 'xml')  # Usando BeautifulSoup para processar XML
-    items = soup.find_all('item')  # Extrai todos os itens do feed
+def get_img_from_feed(item):
+    """Extrai a imagem do campo <description> do feed RSS."""
+    try:
+        soup = BeautifulSoup(item.description, 'html.parser')
+        img_tag = soup.find('img')
+        if img_tag and img_tag.get('src'):
+            return img_tag['src']
+    except Exception as e:
+        print(f"Erro ao extrair imagem: {e}")
+    return None
 
-    for item in items:
-        topic = extract_topic_data(item)
-        if not topic:
-            continue  # Ignora itens com erro na extração
+def define_link(link, PARAMETERS):
+    if PARAMETERS:
+        if '?' in link:
+            return f'{link}&{PARAMETERS}'
+        return f'{link}?{PARAMETERS}'
+    return f'{link}'
 
-        if check_history(topic['link']):
-            print(f"Mensagem já enviada: {topic['title']}")
+def set_text_vars(text, topic):
+    cases = {
+        'SITE_NAME': topic['site_name'],
+        'TITLE': topic['title'],
+        'SUMMARY': re.sub('<[^<]+?>', '', topic['summary']),
+        'LINK': define_link(topic['link'], PARAMETERS),
+        'EMOJI': random.choice(EMOJIS.split(","))
+    }
+    for word in re.split('{|}', text):
+        try:
+            text = text.replace(word, cases.get(word))
+        except TypeError:
             continue
+    return text.replace('\\n', '\n').replace('{', '').replace('}', '')
 
-        add_to_history(topic['link'])
-        BUTTON_TEXT = f"Leia mais de {topic['author']}"
-        send_message(topic, BUTTON_TEXT)
+def check_topics(url):
+    now = gmtime()
+    feed = feedparser.parse(url)
+    try:
+        source = feed['feed']['title']
+    except KeyError:
+        print(f'\nERRO: {url} não parece um feed RSS válido.')
+        return
+    print(f'\nChecando {source}:{url}')
+    for tpc in reversed(feed['items'][:10]):
+        if check_history(tpc.links[0].href):
+            continue
+        add_to_history(tpc.links[0].href)
+        topic = {}
+        topic['site_name'] = feed['feed']['title']
+        topic['title'] = tpc.title.strip()
+        topic['summary'] = tpc.summary
+        topic['link'] = tpc.links[0].href
+        topic['photo'] = get_img_from_feed(tpc)  # Nova função de imagem
+        BUTTON_TEXT = os.environ.get('BUTTON_TEXT', False)
+        if BUTTON_TEXT:
+            BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
+        try:
+            send_message(topic, BUTTON_TEXT)
+        except telebot.apihelper.ApiTelegramException as e:
+            print(e)
+            pass
 
 if __name__ == "__main__":
     for url in URL.split():
-        process_feed(url)
+        check_topics(url)
