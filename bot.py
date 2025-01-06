@@ -49,21 +49,20 @@ async def pesquisa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Responde com os resultados ou mensagem de não encontrado
     if results:
         if len(results) == 1:
-            # Se apenas 1 post, mostrar o título e o link "Baixar"
+            # Se apenas 1 post, exibir o título seguido de um botão para acessar o post
             post = results[0]
-            response = f"{post['title']} - [Baixar]({post['url']})"
-            await update.message.reply_text(response, parse_mode="Markdown", disable_web_page_preview=True)
+            keyboard = [
+                [InlineKeyboardButton(post['title'], url=post['url'])]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            response = f"{post['title']} - Clique no botão abaixo para acessar o post."
+            await update.message.reply_text(response, reply_markup=reply_markup, disable_web_page_preview=True)
         else:
-            # Se mais de 1 post, mostrar os títulos e botões
+            # Se mais de 1 post, mostrar a palavra "Baixar" como link
             response = "Resultados encontrados:\n\n"
             for post in results:
-                response += f"{post['title']}\n"
-                keyboard = [
-                    [InlineKeyboardButton("Baixar", url=post['url'])]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                await update.message.reply_text(response, reply_markup=reply_markup, disable_web_page_preview=True)
-                response = ""  # Limpar a resposta após o primeiro post para evitar repetição
+                response += f"{post['title']} - [Baixar]({post['url']})\n"
+            await update.message.reply_text(response, parse_mode="Markdown", disable_web_page_preview=True)
     else:
         response = "Nenhum post encontrado para o termo pesquisado."
         await update.message.reply_text(response, disable_web_page_preview=True)
