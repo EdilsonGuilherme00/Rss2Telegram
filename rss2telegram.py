@@ -92,19 +92,21 @@ def send_message(topic, button):
 
     if TELEGRAPH_TOKEN:
         iv_link = create_telegraph_post(topic)
-        MESSAGE_TEMPLATE = f'<a href="{iv_link}">󠀠</a>{MESSAGE_TEMPLATE}'
+        MESSAGE_TEMPLATE = f'<a href="{iv_link}"></a>{MESSAGE_TEMPLATE}'
 
     if not firewall(str(topic)):
         print(f'xxx {topic["title"]}')
         return
 
-    btn_link = None  # Initialize btn_link here
+    btn_link = None
     
+    # Verifique se o botão deve ser adicionado
     if button:
-        btn_link = types.InlineKeyboardMarkup()  # Indentation corrected
-        btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])  # Indentation corrected
-        btn_link.add(btn)  # Indentation corrected
+        btn_link = types.InlineKeyboardMarkup()
+        btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])
+        btn_link.add(btn)
 
+    # Condicional para verificar se o botão ou imagem são enviados
     if HIDE_BUTTON or TELEGRAPH_TOKEN:
         for dest in DESTINATION.split(','):
             bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_to_message_id=TOPIC)
