@@ -1,41 +1,41 @@
 import os
-import feedparser
+import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Função para buscar posts do RSS
-def fetch_posts_from_rss(search_term):
-    API_URL = os.getenv("API_URL")  # Lê a URL do feed RSS dos Secrets
+# Função para buscar posts do site via API
+def fetch_posts_from_site(search_term):
+    API_URL = os.getenv("API_URL")  # Lê a URL da API dos Secrets
     if not API_URL:
         raise ValueError("API_URL não foi definido nas variáveis de ambiente.")
-    
+
     try:
-        # Obtém o feed RSS
-        feed = feedparser.parse(API_URL)
-        
-        # Filtra os posts que correspondem ao termo de pesquisa
-        posts = [
-            {"id": entry.id, "title": entry.title, "url": entry.link}
-            for entry in feed.entries
-            if search_term.lower() in entry.title.lower()
-        ]
-        return posts
-    except Exception as e:
-        print(f"Erro ao acessar o feed RSS: {e}")
+        response = requests.get(API_URL, params={"search": search_term})
+        if response.status_code == 200:
+            posts = response.json()
+            # Formata os resultados da API
+            return [
+                {"id": post["id"], "title": post["title"]["rendered"], "url": post["link"]}
+                for post in posts
+            ]
+        else:
+            return []
+    except requests.RequestException as e:
+        print(f"Erro ao acessar a API: {e}")
         return []
 
 # Função para o comando /pesquisa
 async def pesquisa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Verifica se o termo de busca foi fornecido
     if not context.args:
-        await update.message.reply_text("Por favor, insira o termo de pesquisa. Exemplo: /pesquisa DIK")
+        await update.message.reply_text("Por favor, insira o termo de pesquisa. Exemplo: /pesquisa Python")
         return
 
     # Termo de busca
     search_term = " ".join(context.args).lower()
 
-    # Busca posts no RSS
-    results = fetch_posts_from_rss(search_term)
+    # Busca posts no site usando a API
+    results = fetch_posts_from_site(search_term)
 
     # Responde com os resultados ou mensagem de não encontrado
     if results:
