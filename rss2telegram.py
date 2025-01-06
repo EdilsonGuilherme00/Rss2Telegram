@@ -92,26 +92,27 @@ def send_message(topic, button):
 
     if TELEGRAPH_TOKEN:
         iv_link = create_telegraph_post(topic)
-        MESSAGE_TEMPLATE = f'<a href="{iv_link}">󠀠</a>{MESSAGE_TEMPLATE}'
+        MESSAGE_TEMPLATE = f'<a href="{iv_link}"></a>{MESSAGE_TEMPLATE}'
 
     if not firewall(str(topic)):
         print(f'xxx {topic["title"]}')
         return
         
-        btn_link = button
+    btn_link = None  # Initialize btn_link here
+    
     if button:
-    btn_link = types.InlineKeyboardMarkup()  # Indentação corrigida
-    btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])  # Indentação corrigida
-    btn_link.add(btn)  # Indentação corrigida
+        btn_link = types.InlineKeyboardMarkup()  # Indentation corrected
+        btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])  # Indentation corrected
+        btn_link.add(btn)  # Indentation corrected
     
     if HIDE_BUTTON or TELEGRAPH_TOKEN:
         for dest in DESTINATION.split(','):
             bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_to_message_id=TOPIC)
     else:
         if topic['photo']:
-    response = requests.get(topic['photo'], headers={'User-agent': 'Mozilla/5.1'})
-    with open('img', 'wb') as f:
-        f.write(response.content)
+            response = requests.get(topic['photo'], headers={'User-agent': 'Mozilla/5.1'})
+            with open('img', 'wb') as f:
+                f.write(response.content)
             for dest in DESTINATION.split(','):
                 photo = open('img', 'rb')
                 try:
@@ -122,6 +123,7 @@ def send_message(topic, button):
         else:
             for dest in DESTINATION.split(','):
                 bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link, disable_web_page_preview=True, reply_to_message_id=TOPIC)
+    
     print(f'... {topic["title"]}')
     time.sleep(0.2)
 
