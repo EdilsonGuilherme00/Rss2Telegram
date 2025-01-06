@@ -161,6 +161,11 @@ def set_text_vars(text, topic):
 
 
 def check_topics(url):
+
+    BUTTON_TEXT = os.environ.get('BUTTON_TEXT', '')
+if BUTTON_TEXT:
+    BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
+    
     now = gmtime()
     feed = feedparser.parse(url)
     try:
