@@ -98,12 +98,10 @@ def send_message(topic, button):
         print(f'xxx {topic["title"]}')
         return
 
-    btn_link = button
-    if button:  # Certificando-se que button não está vazio
-    btn_link = types.InlineKeyboardMarkup()
-    print(f"Link do Post: {topic['link']}")  # Verifique o link aqui
-btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])
-    btn_link.add(btn)  # Ajustando o método de adição de botões
+    if button:  # Verificando se o botão está presente
+    btn_link = types.InlineKeyboardMarkup()  # Indentação correta
+    btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])  # Indentação correta
+    btn_link.add(btn)  # Indentação correta
     
     if HIDE_BUTTON or TELEGRAPH_TOKEN:
         for dest in DESTINATION.split(','):
