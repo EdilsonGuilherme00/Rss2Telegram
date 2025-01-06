@@ -1,7 +1,7 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # Função para buscar posts no site via Web Scraping
@@ -46,16 +46,27 @@ async def pesquisa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Busca posts no site usando Web Scraping
     results = scrape_posts_from_site(search_term)
 
-    # Responde com os resultados ou mensagem de não encontrado
-    if results:
-        response = "Resultados encontrados:\n\n"
-        for post in results:
-            response += f"- [{post['title']}]({post['url']})\n"
-    else:
-        response = "Nenhum post encontrado para o termo pesquisado."
+    # Se houver apenas 1 resultado, cria um botão com o link
+    if len(results) == 1:
+        post = results[0]
+        keyboard = [[InlineKeyboardButton("Acessar", url=post['url'])]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        response = f"Resultado encontrado:\n\n{post['title']}"
+        await update.message.reply_text(response, reply_markup=reply_markup)
 
-    # Envia a resposta
-    await update.message.reply_text(response, parse_mode="Markdown")
+    # Se houver mais de 1 resultado, cria um botão com a palavra "Baixar"
+    elif len(results) > 1:
+        response = "Resultados encontrados:\n\n"
+        keyboard = []
+        for post in results:
+            keyboard.append([InlineKeyboardButton("Baixar", url=post['url'])])
+            response += f"- {post['title']}\n"
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(response, reply_markup=reply_markup)
+
+    # Se não houver resultados
+    else:
+        await update.message.reply_text("Nenhum post encontrado para o termo pesquisado.")
 
 # Função para o comando /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
