@@ -97,11 +97,12 @@ def send_message(topic, button):
     if not firewall(str(topic)):
         print(f'xxx {topic["title"]}')
         return
-
-    if button:  # Verificando se o botão está presente
-    btn_link = types.InlineKeyboardMarkup()  # Indentação correta
-    btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])  # Indentação correta
-    btn_link.add(btn)  # Indentação correta
+        
+        btn_link = button
+    if button:
+    btn_link = types.InlineKeyboardMarkup()  # Indentação corrigida
+    btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])  # Indentação corrigida
+    btn_link.add(btn)  # Indentação corrigida
     
     if HIDE_BUTTON or TELEGRAPH_TOKEN:
         for dest in DESTINATION.split(','):
