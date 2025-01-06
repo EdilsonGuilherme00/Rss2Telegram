@@ -166,14 +166,14 @@ def check_topics(url):
         return
     print(f'\nChecando {source}:{url}')
     for tpc in reversed(feed['items'][:10]):
-        if check_history(tpc.links[0].href):
+        if check_history(tpc.link):
             continue
-        add_to_history(tpc.links[0].href)
+            add_to_history(tpc.link)
         topic = {}
         topic['site_name'] = feed['feed']['title']
         topic['title'] = tpc.title.strip()
         topic['summary'] = tpc.summary
-        topic['link'] = tpc.links[0].href
+        topic['link'] = topic['link'] = tpc.link
         topic['photo'] = get_img_from_feed(tpc)  # Nova função de imagem
         BUTTON_TEXT = os.environ.get('BUTTON_TEXT', False)
         if BUTTON_TEXT:
