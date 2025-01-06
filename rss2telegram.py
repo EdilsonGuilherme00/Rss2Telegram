@@ -92,21 +92,18 @@ def send_message(topic, button):
 
     if TELEGRAPH_TOKEN:
         iv_link = create_telegraph_post(topic)
-        MESSAGE_TEMPLATE = f'<a href="{iv_link}"></a>{MESSAGE_TEMPLATE}'
+        MESSAGE_TEMPLATE = f'<a href="{iv_link}">󠀠</a>{MESSAGE_TEMPLATE}'
 
     if not firewall(str(topic)):
         print(f'xxx {topic["title"]}')
         return
 
-    btn_link = None
-    
-    # Verifique se o botão deve ser adicionado
+    btn_link = button
     if button:
         btn_link = types.InlineKeyboardMarkup()
         btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])
-        btn_link.add(btn)
+        btn_link.row(btn)
 
-    # Condicional para verificar se o botão ou imagem são enviados
     if HIDE_BUTTON or TELEGRAPH_TOKEN:
         for dest in DESTINATION.split(','):
             bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_to_message_id=TOPIC)
@@ -126,7 +123,7 @@ def send_message(topic, button):
                 bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link, disable_web_page_preview=True, reply_to_message_id=TOPIC)
     print(f'... {topic["title"]}')
     time.sleep(0.2)
-    
+
 def get_img_from_feed(item):
     """Extrai a imagem do campo <description> do feed RSS."""
     try:
@@ -161,7 +158,8 @@ def set_text_vars(text, topic):
         except TypeError:
             continue
     return text.replace('\\n', '\n').replace('{', '').replace('}', '')
-    
+
+
 def check_topics(url):
     now = gmtime()
     feed = feedparser.parse(url)
@@ -180,18 +178,15 @@ def check_topics(url):
         topic['title'] = tpc.title.strip()
         topic['summary'] = tpc.summary
         topic['link'] = tpc.links[0].href
-        topic['photo'] = get_img_from_feed(tpc)  # Nova função de imagem
-
-        BUTTON_TEXT = os.environ.get('BUTTON_TEXT', 'Clique aqui')  # Usando um valor padrão
-        
-        if BUTTON_TEXT:  # Corrected indentation here
+        topic['photo'] = get_img_from_feed(tpc)
+        BUTTON_TEXT = os.environ.get('BUTTON_TEXT', False)
+        if BUTTON_TEXT:
             BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
         try:
             send_message(topic, BUTTON_TEXT)
         except telebot.apihelper.ApiTelegramException as e:
             print(e)
             pass
-
 
 if __name__ == "__main__":
     for url in URL.split():
