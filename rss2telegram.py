@@ -99,18 +99,20 @@ def send_message(topic, button):
         return
 
     btn_link = button
-    if button:
-        btn_link = types.InlineKeyboardMarkup()
-        btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])
-        btn_link.row(btn)
-
+    if button:  # Certificando-se que button não está vazio
+    btn_link = types.InlineKeyboardMarkup()
+    print(f"Link do Post: {topic['link']}")  # Verifique o link aqui
+btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])
+    btn_link.add(btn)  # Ajustando o método de adição de botões
+    
     if HIDE_BUTTON or TELEGRAPH_TOKEN:
         for dest in DESTINATION.split(','):
             bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_to_message_id=TOPIC)
     else:
-        if topic['photo'] and not TELEGRAPH_TOKEN:
-            response = requests.get(topic['photo'], headers = {'User-agent': 'Mozilla/5.1'})
-            open('img', 'wb').write(response.content)
+        if topic['photo']:
+    response = requests.get(topic['photo'], headers={'User-agent': 'Mozilla/5.1'})
+    with open('img', 'wb') as f:
+        f.write(response.content)
             for dest in DESTINATION.split(','):
                 photo = open('img', 'rb')
                 try:
@@ -180,11 +182,10 @@ def check_topics(url):
         topic['link'] = tpc.links[0].href
         topic['photo'] = get_img_from_feed(tpc)  # Nova função de imagem
 
-        # Corrigido: inicializando BUTTON_TEXT antes de usá-la
-        BUTTON_TEXT = os.environ.get('BUTTON_TEXT', '')
-        if BUTTON_TEXT:
-            BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
-
+        BUTTON_TEXT = os.environ.get('BUTTON_TEXT', 'Clique aqui')  # Usando um valor padrão
+if BUTTON_TEXT:
+    BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
+    
         try:
             send_message(topic, BUTTON_TEXT)
         except telebot.apihelper.ApiTelegramException as e:
