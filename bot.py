@@ -19,11 +19,13 @@ def fetch_posts_from_site(search_term):
         
         if response.status_code == 200:
             posts = response.json()
-            print(f"Resultados encontrados: {len(posts)} posts.")  # Log do número de posts
             
-            # Formata os resultados da API
+            # Log para verificar como os dados estão sendo retornados
+            print(f"Resultado da API: {posts}")  # Exibe a resposta da API para inspeção
+            
+            # Formata os resultados da API, verificando se o campo de título está presente
             return [
-                {"id": post["id"], "title": post["title"]["rendered"], "url": post["link"]}
+                {"id": post["id"], "title": post.get("title", {}).get("rendered", "Título não encontrado"), "url": post["link"]}
                 for post in posts
             ]
         else:
