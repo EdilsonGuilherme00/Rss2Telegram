@@ -79,7 +79,7 @@ def create_telegraph_post(topic):
     )
     return response["url"]
 
-def send_message(topic, button):
+def send_message(topic, button_text):
     if DRYRUN == 'failure':
         return
 
@@ -98,10 +98,10 @@ def send_message(topic, button):
         print(f'xxx {topic["title"]}')
         return
 
-    btn_link = button
-    if button:
+    btn_link = None
+    if button_text:
         btn_link = types.InlineKeyboardMarkup()
-        btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])
+        btn = types.InlineKeyboardButton(button_text, url=topic['link'])
         btn_link.row(btn)
 
     if HIDE_BUTTON or TELEGRAPH_TOKEN:
@@ -109,7 +109,7 @@ def send_message(topic, button):
             bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_to_message_id=TOPIC)
     else:
         if topic['photo'] and not TELEGRAPH_TOKEN:
-            response = requests.get(topic['photo'], headers = {'User-agent': 'Mozilla/5.1'})
+            response = requests.get(topic['photo'], headers={'User-agent': 'Mozilla/5.1'})
             open('img', 'wb').write(response.content)
             for dest in DESTINATION.split(','):
                 photo = open('img', 'rb')
@@ -117,13 +117,12 @@ def send_message(topic, button):
                     bot.send_photo(dest, photo, caption=MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link, reply_to_message_id=TOPIC)
                 except telebot.apihelper.ApiTelegramException:
                     topic['photo'] = False
-                    send_message(topic, button)
+                    send_message(topic, button_text)
         else:
             for dest in DESTINATION.split(','):
                 bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link, disable_web_page_preview=True, reply_to_message_id=TOPIC)
     print(f'... {topic["title"]}')
     time.sleep(0.2)
-
 def get_img_from_feed(item):
     """Extrai a imagem do campo <description> do feed RSS."""
     try:
