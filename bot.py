@@ -7,7 +7,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 # Função para buscar posts no site via Web Scraping
 def scrape_posts_from_site(search_term):
     API_URL = os.getenv("API_URL")  # Lê o URL base do site dos Secrets
-    if not SITE_URL:
+    if not API_URL:
         raise ValueError("API_URL não foi definido nas variáveis de ambiente.")
 
     try:
