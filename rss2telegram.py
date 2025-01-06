@@ -79,7 +79,7 @@ def create_telegraph_post(topic):
     )
     return response["url"]
 
-def send_message(topic, button_text):
+def send_message(topic, button):
     if DRYRUN == 'failure':
         return
 
@@ -92,16 +92,16 @@ def send_message(topic, button_text):
 
     if TELEGRAPH_TOKEN:
         iv_link = create_telegraph_post(topic)
-        MESSAGE_TEMPLATE = f'<a href="{iv_link}"></a>{MESSAGE_TEMPLATE}'
+        MESSAGE_TEMPLATE = f'<a href="{iv_link}">󠀠</a>{MESSAGE_TEMPLATE}'
 
     if not firewall(str(topic)):
         print(f'xxx {topic["title"]}')
         return
 
-    btn_link = None
-    if button_text:
+    btn_link = button
+    if button:
         btn_link = types.InlineKeyboardMarkup()
-        btn = types.InlineKeyboardButton(button_text, url=topic['link'])
+        btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])
         btn_link.row(btn)
 
     if HIDE_BUTTON or TELEGRAPH_TOKEN:
@@ -109,7 +109,7 @@ def send_message(topic, button_text):
             bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_to_message_id=TOPIC)
     else:
         if topic['photo'] and not TELEGRAPH_TOKEN:
-            response = requests.get(topic['photo'], headers={'User-agent': 'Mozilla/5.1'})
+            response = requests.get(topic['photo'], headers = {'User-agent': 'Mozilla/5.1'})
             open('img', 'wb').write(response.content)
             for dest in DESTINATION.split(','):
                 photo = open('img', 'rb')
@@ -117,12 +117,13 @@ def send_message(topic, button_text):
                     bot.send_photo(dest, photo, caption=MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link, reply_to_message_id=TOPIC)
                 except telebot.apihelper.ApiTelegramException:
                     topic['photo'] = False
-                    send_message(topic, button_text)
+                    send_message(topic, button)
         else:
             for dest in DESTINATION.split(','):
                 bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link, disable_web_page_preview=True, reply_to_message_id=TOPIC)
     print(f'... {topic["title"]}')
     time.sleep(0.2)
+
 def get_img_from_feed(item):
     """Extrai a imagem do campo <description> do feed RSS."""
     try:
@@ -133,13 +134,14 @@ def get_img_from_feed(item):
     except Exception as e:
         print(f"Erro ao extrair imagem: {e}")
     return None
-
 def define_link(link, PARAMETERS):
     if PARAMETERS:
         if '?' in link:
             return f'{link}&{PARAMETERS}'
         return f'{link}?{PARAMETERS}'
     return f'{link}'
+
+
 
 def set_text_vars(text, topic):
     cases = {
@@ -156,6 +158,7 @@ def set_text_vars(text, topic):
             continue
     return text.replace('\\n', '\n').replace('{', '').replace('}', '')
 
+
 def check_topics(url):
     now = gmtime()
     feed = feedparser.parse(url)
@@ -166,15 +169,15 @@ def check_topics(url):
         return
     print(f'\nChecando {source}:{url}')
     for tpc in reversed(feed['items'][:10]):
-        if check_history(tpc.link):
+        if check_history(tpc.links[0].href):
             continue
-            add_to_history(tpc.link)
+        add_to_history(tpc.links[0].href)
         topic = {}
         topic['site_name'] = feed['feed']['title']
         topic['title'] = tpc.title.strip()
         topic['summary'] = tpc.summary
-        topic['link'] = topic['link'] = tpc.link
-        topic['photo'] = get_img_from_feed(tpc)  # Nova função de imagem
+        topic['link'] = tpc.links[0].href
+        topic['photo'] = get_img(tpc.links[0].href)
         BUTTON_TEXT = os.environ.get('BUTTON_TEXT', False)
         if BUTTON_TEXT:
             BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
