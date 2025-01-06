@@ -161,11 +161,6 @@ def set_text_vars(text, topic):
 
 
 def check_topics(url):
-
-    BUTTON_TEXT = os.environ.get('BUTTON_TEXT', '')
-if BUTTON_TEXT:
-    BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
-    
     now = gmtime()
     feed = feedparser.parse(url)
     try:
@@ -183,9 +178,13 @@ if BUTTON_TEXT:
         topic['title'] = tpc.title.strip()
         topic['summary'] = tpc.summary
         topic['link'] = tpc.links[0].href
-        topic['photo'] = get_img_from_feed(tpc)  # Nova função de imagem        BUTTON_TEXT = os.environ.get('BUTTON_TEXT', False)
+        topic['photo'] = get_img_from_feed(tpc)  # Nova função de imagem
+
+        # Corrigido: inicializando BUTTON_TEXT antes de usá-la
+        BUTTON_TEXT = os.environ.get('BUTTON_TEXT', '')
         if BUTTON_TEXT:
             BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
+
         try:
             send_message(topic, BUTTON_TEXT)
         except telebot.apihelper.ApiTelegramException as e:
