@@ -78,42 +78,50 @@ def create_telegraph_post(topic):
         author_name=f'{topic["site_name"]}'
     )
     return response["url"]
-def send_message(topic, button_text):
+
+def send_message(topic, button):
     if DRYRUN == 'failure':
         return
 
-    MESSAGE_TEMPLATE = os.environ.get('MESSAGE_TEMPLATE', False)
+    MESSAGE_TEMPLATE = os.environ.get(f'MESSAGE_TEMPLATE', False)
 
     if MESSAGE_TEMPLATE:
         MESSAGE_TEMPLATE = set_text_vars(MESSAGE_TEMPLATE, topic)
     else:
-        MESSAGE_TEMPLATE = f'<b>{topic["title"]}</b>\n\n{topic["summary"]}'
+        MESSAGE_TEMPLATE = f'<b>{topic["title"]}</b>'
 
-    # Criar botão inline com o link
-    if button_text:
+    if TELEGRAPH_TOKEN:
+        iv_link = create_telegraph_post(topic)
+        MESSAGE_TEMPLATE = f'<a href="{iv_link}">󠀠</a>{MESSAGE_TEMPLATE}'
+
+    if not firewall(str(topic)):
+        print(f'xxx {topic["title"]}')
+        return
+
+    btn_link = button
+    if button:
         btn_link = types.InlineKeyboardMarkup()
-        btn = types.InlineKeyboardButton(button_text, url=topic['link'])
+        btn = types.InlineKeyboardButton(f'{button}', url=topic['link'])
         btn_link.row(btn)
+
+    if HIDE_BUTTON or TELEGRAPH_TOKEN:
+        for dest in DESTINATION.split(','):
+            bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_to_message_id=TOPIC)
     else:
-        btn_link = None
-
-    # Enviar a mensagem
-    for dest in DESTINATION.split(','):
-        if topic['photo']:
-            try:
-                # Baixar imagem para enviar
-                response = requests.get(topic['photo'], headers={'User-agent': 'Mozilla/5.1'})
-                with open('img', 'wb') as img_file:
-                    img_file.write(response.content)
-
-                with open('img', 'rb') as photo:
-                    bot.send_photo(dest, photo, caption=MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link)
-            except Exception as e:
-                print(f"Erro ao enviar imagem: {e}")
+        if topic['photo'] and not TELEGRAPH_TOKEN:
+            response = requests.get(topic['photo'], headers = {'User-agent': 'Mozilla/5.1'})
+            open('img', 'wb').write(response.content)
+            for dest in DESTINATION.split(','):
+                photo = open('img', 'rb')
+                try:
+                    bot.send_photo(dest, photo, caption=MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link, reply_to_message_id=TOPIC)
+                except telebot.apihelper.ApiTelegramException:
+                    topic['photo'] = False
+                    send_message(topic, button)
         else:
-            bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link)
-    
-    print(f'Mensagem enviada: {topic["title"]}')
+            for dest in DESTINATION.split(','):
+                bot.send_message(dest, MESSAGE_TEMPLATE, parse_mode='HTML', reply_markup=btn_link, disable_web_page_preview=True, reply_to_message_id=TOPIC)
+    print(f'... {topic["title"]}')
     time.sleep(0.2)
 
 def get_img_from_feed(item):
@@ -134,6 +142,8 @@ def define_link(link, PARAMETERS):
         return f'{link}?{PARAMETERS}'
     return f'{link}'
 
+
+
 def set_text_vars(text, topic):
     cases = {
         'SITE_NAME': topic['site_name'],
@@ -149,6 +159,7 @@ def set_text_vars(text, topic):
             continue
     return text.replace('\\n', '\n').replace('{', '').replace('}', '')
 
+
 def check_topics(url):
     now = gmtime()
     feed = feedparser.parse(url)
@@ -162,14 +173,14 @@ def check_topics(url):
         if check_history(tpc.links[0].href):
             continue
         add_to_history(tpc.links[0].href)
-        topic = {
-            'site_name': feed['feed']['title'],
-            'title': tpc.title.strip(),
-            'summary': tpc.summary,
-            'link': tpc.links[0].href,
-            'photo': get_img_from_feed(tpc),
-        }
-        BUTTON_TEXT = "🔗 Acesse o Post"
+        topic = {}
+        topic['site_name'] = feed['feed']['title']
+        topic['title'] = tpc.title.strip()
+        topic['summary'] = tpc.summary
+        topic['link'] = tpc.links[0].href
+        topic['photo'] = get_img_from_feed(tpc)  # Nova função de imagem        BUTTON_TEXT = os.environ.get('BUTTON_TEXT', False)
+        if BUTTON_TEXT:
+            BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
         try:
             send_message(topic, BUTTON_TEXT)
         except telebot.apihelper.ApiTelegramException as e:
