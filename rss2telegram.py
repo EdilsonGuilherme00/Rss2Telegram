@@ -184,14 +184,15 @@ def check_topics(url):
         topic['photo'] = get_img_from_feed(tpc)  # Nova função de imagem
 
         BUTTON_TEXT = os.environ.get('BUTTON_TEXT', 'Clique aqui')  # Usando um valor padrão
-if BUTTON_TEXT:
-    BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
-    
-        try:
-            send_message(topic, BUTTON_TEXT)
-        except telebot.apihelper.ApiTelegramException as e:
-            print(e)
-            pass
+        
+        if BUTTON_TEXT:  # Corrected indentation here
+            BUTTON_TEXT = set_text_vars(BUTTON_TEXT, topic)
+        
+            try:
+                send_message(topic, BUTTON_TEXT)
+            except telebot.apihelper.ApiTelegramException as e:
+                print(e)
+                pass
 
 if __name__ == "__main__":
     for url in URL.split():
