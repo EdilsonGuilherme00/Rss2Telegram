@@ -117,7 +117,7 @@ def send_message(topic, button_text):
                 parse_mode='HTML',
                 reply_markup=btn_link
             )
-        print(f'Mensagem enviada: {topic['title']}")
+        print(f'Mensagem enviada: {topic[\'title\']}')
     time.sleep(0.2)
 
 def process_feed(feed_url):
