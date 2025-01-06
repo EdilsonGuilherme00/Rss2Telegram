@@ -1,36 +1,38 @@
 import os
 import requests
-from bs4 import BeautifulSoup
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Função para buscar posts no site via Web Scraping
+# Função para buscar posts no site via API REST do WordPress
 def scrape_posts_from_site(search_term):
     API_URL = os.getenv("API_URL")  # Lê o URL base do site dos Secrets
     if not API_URL:
         raise ValueError("API_URL não foi definido nas variáveis de ambiente.")
 
     try:
-        # URL de busca (ajuste conforme necessário)
-        response = requests.get(f"{API_URL}/busca", params={"q": search_term})
+        # URL da API REST do WordPress
+        api_url = f"{API_URL}/wp-json/wp/v2/posts"
+        
+        # Faz a requisição à API com o termo de busca
+        response = requests.get(api_url, params={"search": search_term})
         
         if response.status_code != 200:
-            print(f"Erro ao acessar o site: {response.status_code}")
+            print(f"Erro ao acessar a API: {response.status_code}")
             return []
 
-        # Analisa o HTML
-        soup = BeautifulSoup(response.text, "html.parser")
-
-        # Ajuste os seletores conforme a estrutura do site
-        posts = []
-        for post in soup.select(".post"):  # Substitua ".post" pelo seletor correto
-            title = post.select_one(".post-title").text.strip()  # Substitua ".post-title" pelo seletor do título
-            link = post.select_one("a")["href"]  # Substitua "a" pelo seletor do link
-            posts.append({"title": title, "url": link})
+        # Converte a resposta JSON para um formato utilizável
+        posts = response.json()
         
-        return posts
+        # Extrai título e link dos posts
+        post_results = []
+        for post in posts:
+            title = post["title"]["rendered"]
+            link = post["link"]
+            post_results.append({"title": title, "url": link})
+        
+        return post_results
     except Exception as e:
-        print(f"Erro durante o scraping: {e}")
+        print(f"Erro durante a requisição da API: {e}")
         return []
 
 # Função para o comando /pesquisa
@@ -43,7 +45,7 @@ async def pesquisa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Termo de busca
     search_term = " ".join(context.args).lower()
 
-    # Busca posts no site usando Web Scraping
+    # Busca posts no site usando a API REST do WordPress
     results = scrape_posts_from_site(search_term)
 
     # Se houver apenas 1 resultado, cria um botão com o link
