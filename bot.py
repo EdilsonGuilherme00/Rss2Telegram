@@ -54,27 +54,27 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Formata os resultados para o modo inline
     inline_results = []
     for post in results:
-        description = f"Acesse o post: {post['title']}\n" \
-                      f"Jogo: {post['nome_jogo']}\n" \
-                      f"Versão: {post['versao']}\n" \
-                      f"Tem Mod: {post['jogo_tem_mod']}"
-        if post['imagem_principal']:
-            description += f"\nImagem: {post['imagem_principal']}"
+        # A descrição no modo inline será apenas a versão
+        description = f"Versão: {post['versao']}"
+
+        # A mensagem enviada quando o usuário clicar no post irá mostrar mais detalhes
+        message = (
+            f"<b>{post['nome_jogo']}</b> - Versão: {post['versao']}\n"
+            f"Mod: {post['jogo_tem_mod']}\n\n"
+            f"<a href='{post['url']}'>Clique aqui para acessar o post</a>\n\n"
+            f"Imagem: {post['imagem_principal']}"  # A imagem pode ser uma URL ou outro campo conforme necessário
+        )
 
         # Adiciona o post ao resultado inline
         inline_results.append(
             InlineQueryResultArticle(
                 id=post["id"],
-                title=post["title"],
+                title=post["nome_jogo"],  # Usando 'nome_jogo' como título
                 input_message_content=InputTextMessageContent(
-                    f"{post['title']} - [Clique aqui para acessar o post.]({post['url']})",
-                    parse_mode="Markdown",
+                    message,
+                    parse_mode="HTML",  # Usando HTML para formatação de texto
                 ),
-                reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("Acessar Post", url=post["url"])]]
-                ),
-                description=description,
-                thumb=post['imagem_principal'] if post['imagem_principal'] else None  # Usando thumb em vez de thumb_url
+                description=description,  # Descrição com a versão
             )
         )
 
