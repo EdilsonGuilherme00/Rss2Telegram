@@ -74,7 +74,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     [[InlineKeyboardButton("Acessar Post", url=post["url"])]]
                 ),
                 description=description,
-                thumb_url=post['imagem_principal'] if post['imagem_principal'] else None  # Usando thumb_url com imagem_principal
+                thumb=post['imagem_principal'] if post['imagem_principal'] else None  # Usando thumb em vez de thumb_url
             )
         )
 
