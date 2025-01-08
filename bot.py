@@ -94,14 +94,6 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         # Envia a imagem como uma foto, se disponível
         if post.get('imagem_principal'):
             # Aqui você envia a imagem principal diretamente
-            await update.inline_query.answer(
-                inline_results, 
-                cache_time=1, 
-                switch_pm_text="Veja mais resultados", 
-                switch_pm_parameter="start"
-            )
-
-            # Você pode usar algo como 'requests' para baixar e enviar a imagem
             try:
                 img_url = post['imagem_principal']
                 img_data = requests.get(img_url).content
