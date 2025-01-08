@@ -79,7 +79,6 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                         parse_mode="HTML",  # Usando HTML para formatação de texto
                     ),
                     photo_url=post['imagem_principal'],  # URL da imagem que será enviada
-                    thumb_url=post['imagem_principal'],  # Miniatura da imagem
                     caption=message  # A mensagem como a legenda da imagem
                 )
             )
