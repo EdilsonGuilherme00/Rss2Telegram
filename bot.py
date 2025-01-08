@@ -1,6 +1,6 @@
 import os
 import requests
-from telegram import Update, InlineQueryResultArticle, InlineQueryResultPhoto, InputTextMessageContent, InputMediaPhoto
+from telegram import Update, InlineQueryResultArticle, InlineQueryResultPhoto, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 
 # Função para buscar posts do site via API
@@ -69,21 +69,25 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         # Se houver imagem_principal, envia a imagem com a mensagem
         if post.get('imagem_principal'):
-            # Usando InlineQueryResultArticle para enviar a imagem
+            # Garantir que 'photo_url' e 'thumbnail_url' sejam fornecidos corretamente
+            photo_url = post['imagem_principal']
+            thumbnail_url = post['imagem_principal']  # ou pode ser um URL menor para miniatura, se disponível
+
             inline_results.append(
                 InlineQueryResultPhoto(
                     id=post["id"],
                     title=title,  # Usando o nome_jogo ou o título do post
-                    input_message_content=InputMediaPhoto(
-                        media=post['imagem_principal'],  # URL da imagem que será exibida
-                        caption=message,  # A mensagem com os detalhes do post
+                    input_message_content=InputTextMessageContent(
+                        message,
                         parse_mode="HTML",  # Usando HTML para formatação de texto
                     ),
-                    description=description,
+                    photo_url=photo_url,  # A URL da imagem principal
+                    thumbnail_url=thumbnail_url,  # A URL da miniatura (pode ser a mesma da imagem principal)
+                    caption=message  # A mensagem como a legenda da imagem
                 )
             )
         else:
-            # Se não houver imagem, apenas enviar o título e a versão com InputTextMessageContent
+            # Se não houver imagem, apenas enviar o título e a versão
             inline_results.append(
                 InlineQueryResultArticle(
                     id=post["id"],
