@@ -1,6 +1,6 @@
 import os
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InlineQueryResultPhoto, InputTextMessageContent
+from telegram import Update, InlineQueryResultArticle, InlineQueryResultPhoto, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 
 # Função para buscar posts do site via API
@@ -79,6 +79,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                         parse_mode="HTML",  # Usando HTML para formatação de texto
                     ),
                     photo_url=post['imagem_principal'],  # URL da imagem que será enviada
+                    thumbnail_url=post['imagem_principal'],  # Usando a mesma imagem como miniatura
                     caption=message  # A mensagem como a legenda da imagem
                 )
             )
