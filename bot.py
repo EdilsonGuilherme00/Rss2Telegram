@@ -68,54 +68,50 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             f"Mod: {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
         )
 
-        # Se houver imagem_principal, envia a imagem com a mensagem
-        image_stream = None
-        if post.get('imagem_principal'):
-            image_url = post['imagem_principal']
-            try:
-                # Baixa a imagem da URL diretamente para a memória
-                img_data = requests.get(image_url).content
-                image_stream = BytesIO(img_data)  # Converte para um stream de bytes
-            except Exception as e:
-                print(f"Erro ao enviar imagem: {e}")
-
         # Adiciona o botão de link para o post
         keyboard = [
             [InlineKeyboardButton("Clique aqui para acessar o post", url=post['url'])]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Cria o resultado inline
-        if image_stream:
-            inline_results.append(
-                InlineQueryResultArticle(
-                    id=post["id"],
-                    title=title,  # Usando o nome_jogo ou o título do post
-                    input_message_content=InputTextMessageContent(
-                        message,
-                        parse_mode="HTML",  # Usando HTML para formatação de texto
-                    ),
-                    description=description,  # Descrição com a versão
-                    reply_markup=reply_markup,  # Inclui o botão de link
-                    thumb_url=image_url  # Usa a URL da imagem como thumbnail
-                )
+        # Cria o resultado inline (sem imagem)
+        inline_results.append(
+            InlineQueryResultArticle(
+                id=post["id"],
+                title=title,  # Usando o nome_jogo ou o título do post
+                input_message_content=InputTextMessageContent(
+                    message,
+                    parse_mode="HTML",  # Usando HTML para formatação de texto
+                ),
+                description=description,  # Descrição com a versão
+                reply_markup=reply_markup  # Inclui o botão de link
             )
-        else:
-            inline_results.append(
-                InlineQueryResultArticle(
-                    id=post["id"],
-                    title=title,
-                    input_message_content=InputTextMessageContent(
-                        message,
-                        parse_mode="HTML",
-                    ),
-                    description=description,
-                    reply_markup=reply_markup
-                )
-            )
+        )
 
     # Envia os resultados
     await update.inline_query.answer(inline_results, cache_time=1)
+
+    # Se houver imagem, envia ela diretamente após a consulta (apenas na mensagem de resposta)
+    for post in results:
+        if post.get('imagem_principal'):
+            image_url = post['imagem_principal']
+            try:
+                # Baixa a imagem da URL diretamente para a memória
+                img_data = requests.get(image_url).content
+                image_stream = BytesIO(img_data)  # Converte para um stream de bytes
+
+                # Envia a imagem com a legenda formatada
+                await update.inline_query.answer(
+                    results=[],
+                    cache_time=1
+                )
+                await update.message.reply_photo(
+                    photo=image_stream,
+                    caption=message,
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                print(f"Erro ao enviar imagem: {e}")
 
 # Função para o comando /start (ainda existe, mas não será utilizado diretamente)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
