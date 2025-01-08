@@ -1,6 +1,10 @@
 import sqlite3
 import os
 from datetime import datetime, timedelta
+import pytz
+
+# Configuração do fuso horário
+LOCAL_TIMEZONE = pytz.timezone('America/Sao_Paulo')
 
 # Obtendo variáveis de ambiente
 TOPIC = os.getenv('TOPIC')
@@ -25,13 +29,17 @@ def create_table():
 
 # Função para adicionar uma mensagem ao banco de dados
 def add_message(topic_id, message):
-    cursor.execute('INSERT INTO messages (topic_id, message) VALUES (?, ?)', (topic_id, message))
+    # Captura o horário local e converte para UTC antes de salvar
+    now_utc = datetime.now(pytz.utc)
+    cursor.execute('INSERT INTO messages (topic_id, message, timestamp) VALUES (?, ?, ?)', 
+                   (topic_id, message, now_utc.strftime('%Y-%m-%d %H:%M:%S')))
     conn.commit()
 
 # Função para apagar mensagens de um tópico específico após 24 horas
 def delete_messages_from_topic(topic_id):
-    cutoff_time = datetime.now() - timedelta(hours=24)
-    cutoff_time_str = cutoff_time.strftime('%Y-%m-%d %H:%M:%S')  # Formato correto para o SQLite
+    # Calcula a data de corte em UTC
+    cutoff_time = datetime.now(pytz.utc) - timedelta(hours=24)
+    cutoff_time_str = cutoff_time.strftime('%Y-%m-%d %H:%M:%S')
     print(f"Deletando mensagens do tópico {topic_id} com timestamp anterior a: {cutoff_time_str}")
     
     # Comparação correta usando o formato DATETIME do SQLite
