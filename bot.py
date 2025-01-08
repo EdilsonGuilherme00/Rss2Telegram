@@ -69,7 +69,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         # Se houver imagem_principal, envia a imagem com a mensagem
         if post.get('imagem_principal'):
-            message += f"Imagem: {post['imagem_principal']}\n\n"
+            message += f"Imagem:\n{post['imagem_principal']}\n\n"  # A URL será mostrada aqui, mas a imagem será enviada como anexo.
 
         # Adiciona o botão de link para o post
         keyboard = [
