@@ -1,19 +1,27 @@
 import os
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent, InputMediaPhoto, InputFile
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 
 # Função para buscar posts do site via API
 def fetch_posts_from_site(search_term):
-    API_URL = os.getenv("API_URL")
+    API_URL = os.getenv("API_URL")  # Lê a URL da API dos Secrets
     if not API_URL:
         raise ValueError("API_URL não foi definido nas variáveis de ambiente.")
+    
+    print(f"Buscando posts com o termo: {search_term}")  # Log do termo de pesquisa
     
     try:
         response = requests.get(API_URL, params={"search": search_term})
         
+        # Log de status da resposta da API
+        print(f"Status da resposta da API: {response.status_code}")
+        
         if response.status_code == 200:
             posts = response.json()
+            print(f"Resultados encontrados: {len(posts)} posts.")  # Log do número de posts
+            
+            # Formata os resultados da API incluindo os novos campos
             return [
                 {
                     "id": post["id"], 
@@ -27,23 +35,11 @@ def fetch_posts_from_site(search_term):
                 for post in posts
             ]
         else:
+            print(f"Erro ao buscar posts: {response.status_code}")
             return []
     except requests.RequestException as e:
         print(f"Erro ao acessar a API: {e}")
         return []
-
-# Função para baixar a imagem (se existir)
-def download_image(url):
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            image_path = "temp_image.jpg"
-            with open(image_path, "wb") as f:
-                f.write(response.content)
-            return image_path
-    except requests.RequestException as e:
-        print(f"Erro ao baixar imagem: {e}")
-    return None
 
 # Função para consultas inline
 async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -52,68 +48,86 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if not query:
         return
 
+    # Busca posts no site
     results = fetch_posts_from_site(query)
 
-    if not results:
-        return
-
+    # Formata os resultados para o modo inline
     inline_results = []
     for post in results:
+        # Se o nome_jogo estiver vazio, usamos o título do post
         title = post["nome_jogo"] if post["nome_jogo"] else post["title"]
         versao = post["versao"] if post["versao"] else "Versão Desconhecida"
+
+        # A descrição no modo inline será apenas a versão, se disponível
         description = f"Versão: {versao}"
 
-        message = f"<b>{title}</b> - Versão: {versao}\nMod: {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
+        # A mensagem enviada quando o usuário clicar no post irá mostrar mais detalhes
+        message = (
+            f"<b>{title}</b> - Versão: {versao}\n"
+            f"Mod: {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
+        )
 
+        # Se houver imagem_principal, envia a imagem com a mensagem
+        if post.get('imagem_principal'):
+            message += f"Imagem: {post['imagem_principal']}\n\n"
+
+        # Adiciona o botão de link para o post
         keyboard = [
             [InlineKeyboardButton("Clique aqui para acessar o post", url=post['url'])]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
+        # Cria o resultado inline
         inline_results.append(
             InlineQueryResultArticle(
                 id=post["id"],
-                title=title,
+                title=title,  # Usando o nome_jogo ou o título do post
                 input_message_content=InputTextMessageContent(
                     message,
-                    parse_mode="HTML",
+                    parse_mode="HTML",  # Usando HTML para formatação de texto
                 ),
-                description=description,
-                reply_markup=reply_markup
+                description=description,  # Descrição com a versão
+                reply_markup=reply_markup  # Inclui o botão de link
             )
         )
 
+        # Envia a imagem como uma foto, se disponível
         if post.get('imagem_principal'):
-            # Baixa e envia a imagem, se existir
-            image_path = download_image(post['imagem_principal'])
-            if image_path:
-                # Usando InputFile ao invés de open diretamente
-                with open(image_path, 'rb') as image_file:
-                    media = InputMediaPhoto(media=InputFile(image_file), caption=message, parse_mode="HTML")
-                    
-                    inline_results.append(
-                        InlineQueryResultArticle(
-                            id=f"{post['id']}_image",  
-                            title=f"Imagem de {title}",
-                            input_message_content=media,
-                            description=description,
-                            reply_markup=reply_markup
-                        )
-                    )
+            # Aqui você envia a imagem principal diretamente
+            await update.inline_query.answer(
+                inline_results, 
+                cache_time=1, 
+                switch_pm_text="Veja mais resultados", 
+                switch_pm_parameter="start"
+            )
 
-    if not inline_results:
-        return
+            # Você pode usar algo como 'requests' para baixar e enviar a imagem
+            try:
+                img_url = post['imagem_principal']
+                img_data = requests.get(img_url).content
+                await update.message.reply_photo(img_data, caption=message)
+            except Exception as e:
+                print(f"Erro ao enviar imagem: {e}")
 
+    # Envia os resultados
     await update.inline_query.answer(inline_results, cache_time=1)
 
-# Função principal para iniciar o bot
+# Função para o comando /start (ainda existe, mas não será utilizado diretamente)
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text("Olá! Use @seubot <termo> no modo inline para buscar posts.")
+
+# Configuração do bot
 def main():
-    TOKEN = os.getenv("BOT_TOKEN")
+    TOKEN = os.getenv("BOT_TOKEN")  # Lê o token da variável de ambiente
     if not TOKEN:
         raise ValueError("BOT_TOKEN não foi definido nas variáveis de ambiente.")
     
     application = ApplicationBuilder().token(TOKEN).build()
+
+    # Adiciona o handler para o modo inline
     application.add_handler(InlineQueryHandler(inline_query))
+    
+    # Inicia o bot
     application.run_polling()
 
 if __name__ == "__main__":
