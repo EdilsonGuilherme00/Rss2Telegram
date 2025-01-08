@@ -1,7 +1,7 @@
 import os
 import requests
 import asyncio
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 from io import BytesIO
 
@@ -89,35 +89,17 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
         )
 
-    # Envia os resultados
+    # Envia os resultados inline (sem imagem)
     await update.inline_query.answer(inline_results, cache_time=1)
 
-    # Apaga os resultados após 30 segundos
+    # Envia a mensagem normal (não inline)
+    response_message = await update.message.reply_text("Aqui estão os resultados:")
+
+    # Aguarda 30 segundos
     await asyncio.sleep(30)
-    await update.inline_query.answer([], cache_time=1)
 
-    # Se houver imagem, envia ela diretamente após a consulta (apenas na mensagem de resposta)
-    for post in results:
-        if post.get('imagem_principal'):
-            image_url = post['imagem_principal']
-            try:
-                # Baixa a imagem da URL diretamente para a memória
-                img_data = requests.get(image_url).content
-                image_stream = BytesIO(img_data)  # Converte para um stream de bytes
-
-                # Envia a imagem com a legenda formatada
-                message_response = await update.message.reply_photo(
-                    photo=image_stream,
-                    caption=message,
-                    parse_mode="HTML"
-                )
-
-                # Aguarda 30 segundos e apaga a mensagem de imagem
-                await asyncio.sleep(30)
-                await message_response.delete()
-
-            except Exception as e:
-                print(f"Erro ao enviar imagem: {e}")
+    # Exclui a mensagem após 30 segundos
+    await response_message.delete()
 
 # Função para o comando /start (ainda existe, mas não será utilizado diretamente)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
