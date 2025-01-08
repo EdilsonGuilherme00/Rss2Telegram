@@ -1,7 +1,7 @@
 import os
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, InlineQueryHandler
 
 # Função para buscar posts do site via API
 def fetch_posts_from_site(search_term):
@@ -69,7 +69,36 @@ async def pesquisa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # Função para o comando /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Olá! Use /pesquisa <termo> para buscar posts.")
+    await update.message.reply_text("Olá! Use /pesquisa <termo> para buscar posts ou @seubot <termo> no modo inline.")
+
+# Função para consultas inline
+async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.inline_query.query.lower()
+
+    if not query:
+        return
+
+    # Busca posts no site
+    results = fetch_posts_from_site(query)
+
+    # Formata os resultados para o modo inline
+    inline_results = []
+    for post in results:
+        inline_results.append(
+            InlineQueryResultArticle(
+                id=post["id"],
+                title=post["title"],
+                input_message_content=InputTextMessageContent(
+                    f"{post['title']} - [Clique aqui para acessar o post.]({post['url']})",
+                    parse_mode="Markdown",
+                ),
+                description=f"Acesse o post: {post['title']}",
+                thumb_url="",  # URL de uma miniatura, se houver
+            )
+        )
+
+    # Envia os resultados
+    await update.inline_query.answer(inline_results, cache_time=1)
 
 # Configuração do bot
 def main():
@@ -79,9 +108,10 @@ def main():
     
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # Adiciona os handlers para os comandos
+    # Adiciona os handlers para os comandos e consultas inline
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("pesquisa", pesquisa))
+    application.add_handler(InlineQueryHandler(inline_query))
 
     # Inicia o bot
     application.run_polling()
