@@ -1,5 +1,6 @@
 import os
 import requests
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 from io import BytesIO
@@ -105,11 +106,16 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     results=[],
                     cache_time=1
                 )
-                await update.message.reply_photo(
+                message_response = await update.message.reply_photo(
                     photo=image_stream,
                     caption=message,
                     parse_mode="HTML"
                 )
+
+                # Aguarda 30 segundos e apaga a mensagem
+                await asyncio.sleep(30)
+                await message_response.delete()
+
             except Exception as e:
                 print(f"Erro ao enviar imagem: {e}")
 
