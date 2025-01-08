@@ -28,17 +28,13 @@ def add_message(topic_id, message):
     cursor.execute('INSERT INTO messages (topic_id, message) VALUES (?, ?)', (topic_id, message))
     conn.commit()
 
-# Função para apagar mensagens após 24 horas
-def delete_old_messages():
-    cutoff_time = datetime.now() - timedelta(hours=24)
-    cursor.execute('DELETE FROM messages WHERE timestamp < ?', (cutoff_time,))
-    conn.commit()
-
 # Função para apagar mensagens de um tópico específico após 24 horas
 def delete_messages_from_topic(topic_id):
     cutoff_time = datetime.now() - timedelta(hours=24)
-    cutoff_time_str = cutoff_time.strftime('%Y-%m-%d %H:%M:%S')  # Formato correto para comparar no SQLite
-    print(f"Deletando mensagens com timestamp anterior a: {cutoff_time_str}")
+    cutoff_time_str = cutoff_time.strftime('%Y-%m-%d %H:%M:%S')  # Formato correto para o SQLite
+    print(f"Deletando mensagens do tópico {topic_id} com timestamp anterior a: {cutoff_time_str}")
+    
+    # Comparação correta usando o formato DATETIME do SQLite
     cursor.execute('DELETE FROM messages WHERE topic_id = ? AND timestamp < ?', (topic_id, cutoff_time_str))
     conn.commit()
 
