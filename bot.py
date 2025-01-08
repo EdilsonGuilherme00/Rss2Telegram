@@ -1,6 +1,6 @@
 import os
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent, InputMediaPhoto
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 
 # Função para buscar posts do site via API
@@ -74,7 +74,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     [[InlineKeyboardButton("Acessar Post", url=post["url"])]]
                 ),
                 description=description,
-                thumb_url=post['imagem_principal'] if post['imagem_principal'] else None  # Adiciona a imagem do post
+                thumb=post['imagem_principal'] if post['imagem_principal'] else None  # Use "thumb" em vez de "thumb_url"
             )
         )
 
