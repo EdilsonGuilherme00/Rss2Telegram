@@ -2,6 +2,7 @@ import os
 import requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
+from io import BytesIO
 
 # Função para buscar posts do site via API
 def fetch_posts_from_site(search_term):
@@ -71,8 +72,12 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if post.get('imagem_principal'):
             image_url = post['imagem_principal']
             try:
-                img_data = requests.get(image_url).content  # Baixa a imagem
-                await update.message.reply_photo(img_data, caption=message, parse_mode="HTML")  # Envia a imagem com a legenda
+                # Baixa a imagem da URL diretamente para a memória
+                img_data = requests.get(image_url).content
+                image_stream = BytesIO(img_data)  # Converte para um stream de bytes
+
+                # Envia a imagem com a legenda formatada
+                await update.message.reply_photo(photo=image_stream, caption=message, parse_mode="HTML")
             except Exception as e:
                 print(f"Erro ao enviar imagem: {e}")
 
