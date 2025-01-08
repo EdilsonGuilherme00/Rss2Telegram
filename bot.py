@@ -86,14 +86,13 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     for post in results:
         inline_results.append(
             InlineQueryResultArticle(
-                id=post["id"],
-                title=post["title"],
-                input_message_content=InputTextMessageContent(
-                    f"{post['title']} - [Clique aqui para acessar o post.]({post['url']})",
-                    parse_mode="Markdown",
-                ),
-                description=f"Acesse o post: {post['title']}",
-                thumb_url="",  # URL de uma miniatura, se houver
+    id=post["id"],
+    title=post["title"],
+    input_message_content=InputTextMessageContent(
+        f"{post['title']} - [Clique aqui para acessar o post.]({post['url']})",
+        parse_mode="Markdown",
+    ),
+    description=f"Acesse o post: {post['title']}"
             )
         )
 
