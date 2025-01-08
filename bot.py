@@ -1,7 +1,6 @@
 import os
 import requests
-import asyncio
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputTextMessageContent
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 from io import BytesIO
 
@@ -89,17 +88,30 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
         )
 
-    # Envia os resultados inline (sem imagem)
+    # Envia os resultados
     await update.inline_query.answer(inline_results, cache_time=1)
 
-    # Envia a mensagem normal (não inline)
-    response_message = await update.message.reply_text("Aqui estão os resultados:")
+    # Se houver imagem, envia ela diretamente após a consulta (apenas na mensagem de resposta)
+    for post in results:
+        if post.get('imagem_principal'):
+            image_url = post['imagem_principal']
+            try:
+                # Baixa a imagem da URL diretamente para a memória
+                img_data = requests.get(image_url).content
+                image_stream = BytesIO(img_data)  # Converte para um stream de bytes
 
-    # Aguarda 30 segundos
-    await asyncio.sleep(30)
-
-    # Exclui a mensagem após 30 segundos
-    await response_message.delete()
+                # Envia a imagem com a legenda formatada
+                await update.inline_query.answer(
+                    results=[],
+                    cache_time=1
+                )
+                await update.message.reply_photo(
+                    photo=image_stream,
+                    caption=message,
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                print(f"Erro ao enviar imagem: {e}")
 
 # Função para o comando /start (ainda existe, mas não será utilizado diretamente)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
