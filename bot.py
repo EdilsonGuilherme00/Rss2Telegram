@@ -1,7 +1,7 @@
 import os
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, InlineQueryHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent, InputMediaPhoto
+from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 
 # Função para buscar posts do site via API
 def fetch_posts_from_site(search_term):
@@ -21,9 +21,17 @@ def fetch_posts_from_site(search_term):
             posts = response.json()
             print(f"Resultados encontrados: {len(posts)} posts.")  # Log do número de posts
             
-            # Formata os resultados da API
+            # Formata os resultados da API incluindo os novos campos
             return [
-                {"id": post["id"], "title": post["title"]["rendered"], "url": post["link"]}
+                {
+                    "id": post["id"], 
+                    "title": post["title"]["rendered"], 
+                    "url": post["link"],
+                    "imagem_principal": post.get("imagem_principal", ""),
+                    "jogo_tem_mod": post.get("jogo_tem_mod", "Não"),
+                    "nome_jogo": post.get("nome_jogo", "Desconhecido"),
+                    "versao": post.get("versao", "Desconhecida")
+                }
                 for post in posts
             ]
         else:
@@ -32,44 +40,6 @@ def fetch_posts_from_site(search_term):
     except requests.RequestException as e:
         print(f"Erro ao acessar a API: {e}")
         return []
-
-# Função para o comando /pesquisa
-async def pesquisa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Verifica se o termo de busca foi fornecido
-    if not context.args:
-        await update.message.reply_text("Por favor, insira o termo de pesquisa. Exemplo: /pesquisa Python")
-        return
-
-    # Termo de busca
-    search_term = " ".join(context.args).lower()
-
-    # Busca posts no site usando a API
-    results = fetch_posts_from_site(search_term)
-
-    # Responde com os resultados ou mensagem de não encontrado
-    if results:
-        if len(results) == 1:
-            # Se apenas 1 post, exibir o título seguido de um botão para acessar o post
-            post = results[0]
-            keyboard = [
-                [InlineKeyboardButton(post['title'], url=post['url'])]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            response = f"{post['title']} - Clique no botão abaixo para acessar o post."
-            await update.message.reply_text(response, reply_markup=reply_markup, disable_web_page_preview=True)
-        else:
-            # Se mais de 1 post, mostrar a palavra "Baixar" como link
-            response = "Resultados encontrados:\n\n"
-            for post in results:
-                response += f"{post['title']} - [Baixar]({post['url']})\n"
-            await update.message.reply_text(response, parse_mode="Markdown", disable_web_page_preview=True)
-    else:
-        response = "Nenhum post encontrado para o termo pesquisado."
-        await update.message.reply_text(response, disable_web_page_preview=True)
-
-# Função para o comando /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Olá! Use /pesquisa <termo> para buscar posts ou @seubot <termo> no modo inline.")
 
 # Função para consultas inline
 async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -84,20 +54,36 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Formata os resultados para o modo inline
     inline_results = []
     for post in results:
+        description = f"Acesse o post: {post['title']}\n" \
+                      f"Jogo: {post['nome_jogo']}\n" \
+                      f"Versão: {post['versao']}\n" \
+                      f"Tem Mod: {post['jogo_tem_mod']}"
+        if post['imagem_principal']:
+            description += f"\nImagem: {post['imagem_principal']}"
+
+        # Adiciona o post ao resultado inline
         inline_results.append(
             InlineQueryResultArticle(
-    id=post["id"],
-    title=post["title"],
-    input_message_content=InputTextMessageContent(
-        f"{post['title']} - [Clique aqui para acessar o post.]({post['url']})",
-        parse_mode="Markdown",
-    ),
-    description=f"Acesse o post: {post['title']}"
+                id=post["id"],
+                title=post["title"],
+                input_message_content=InputTextMessageContent(
+                    f"{post['title']} - [Clique aqui para acessar o post.]({post['url']})",
+                    parse_mode="Markdown",
+                ),
+                reply_markup=InlineKeyboardMarkup(
+                    [[InlineKeyboardButton("Acessar Post", url=post["url"])]]
+                ),
+                description=description,
+                thumb_url=post['imagem_principal'] if post['imagem_principal'] else None  # Adiciona a imagem do post
             )
         )
 
     # Envia os resultados
     await update.inline_query.answer(inline_results, cache_time=1)
+
+# Função para o comando /start (ainda existe, mas não será utilizado diretamente)
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text("Olá! Use @seubot <termo> no modo inline para buscar posts.")
 
 # Configuração do bot
 def main():
@@ -107,11 +93,9 @@ def main():
     
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # Adiciona os handlers para os comandos e consultas inline
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("pesquisa", pesquisa))
+    # Adiciona o handler para o modo inline
     application.add_handler(InlineQueryHandler(inline_query))
-
+    
     # Inicia o bot
     application.run_polling()
 
