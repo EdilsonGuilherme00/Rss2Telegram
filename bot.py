@@ -27,7 +27,7 @@ def fetch_posts_from_site(search_term):
                     "id": post["id"], 
                     "title": post["title"]["rendered"], 
                     "url": post["link"],
-                    "imagem_principal": post.get("imagem_principal", ""),
+                    "imagem_principal": post.get("imagem_principal", ""),  # Usando campo personalizado imagem_principal
                     "jogo_tem_mod": post.get("jogo_tem_mod", "Não"),
                     "nome_jogo": post.get("nome_jogo", "Desconhecido"),
                     "versao": post.get("versao", "Desconhecida")
@@ -74,7 +74,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     [[InlineKeyboardButton("Acessar Post", url=post["url"])]]
                 ),
                 description=description,
-                thumb_url=post['imagem_principal'] if post['imagem_principal'] else None  # Usando thumb_url corretamente
+                thumb_url=post['imagem_principal'] if post['imagem_principal'] else None  # Usando thumb_url com imagem_principal
             )
         )
 
