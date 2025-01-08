@@ -71,7 +71,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if post.get('imagem_principal'):
             # Usando InlineQueryResultArticle para enviar a imagem
             inline_results.append(
-                InlineQueryResultArticle(
+                InlineQueryResultPhoto(
                     id=post["id"],
                     title=title,  # Usando o nome_jogo ou o título do post
                     input_message_content=InputMediaPhoto(
@@ -83,7 +83,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 )
             )
         else:
-            # Se não houver imagem, apenas enviar o título e a versão
+            # Se não houver imagem, apenas enviar o título e a versão com InputTextMessageContent
             inline_results.append(
                 InlineQueryResultArticle(
                     id=post["id"],
