@@ -69,27 +69,35 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         # Se houver imagem_principal, envia a imagem com a mensagem
         if post.get('imagem_principal'):
-            message += f"Imagem:\n{post['imagem_principal']}\n\n"  # A URL será mostrada aqui, mas a imagem será enviada como anexo.
-
-        # Adiciona o botão de link para o post
-        keyboard = [
-            [InlineKeyboardButton("Clique aqui para acessar o post", url=post['url'])]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        # Adiciona o post ao resultado inline
-        inline_results.append(
-            InlineQueryResultArticle(
-                id=post["id"],
-                title=title,  # Usando o nome_jogo ou o título do post
-                input_message_content=InputTextMessageContent(
-                    message,
-                    parse_mode="HTML",  # Usando HTML para formatação de texto
-                ),
-                description=description,  # Descrição com a versão
-                reply_markup=reply_markup  # Inclui o botão de link
+            # Enviar a imagem com a URL da imagem_principal
+            message += "Imagem: \n"
+            inline_results.append(
+                InlineQueryResultArticle(
+                    id=post["id"],
+                    title=title,  # Usando o nome_jogo ou o título do post
+                    input_message_content=InputTextMessageContent(
+                        message,
+                        parse_mode="HTML",  # Usando HTML para formatação de texto
+                    ),
+                    description=description,  # Descrição com a versão
+                    thumb_url=post['imagem_principal'],  # URL da imagem que será enviada
+                    thumb_width=100,  # Largura da miniatura
+                    thumb_height=100,  # Altura da miniatura
+                )
             )
-        )
+        else:
+            # Se não houver imagem, apenas enviar o título e a versão
+            inline_results.append(
+                InlineQueryResultArticle(
+                    id=post["id"],
+                    title=title,
+                    input_message_content=InputTextMessageContent(
+                        message,
+                        parse_mode="HTML",
+                    ),
+                    description=description,
+                )
+            )
 
     # Envia os resultados
     await update.inline_query.answer(inline_results, cache_time=1)
