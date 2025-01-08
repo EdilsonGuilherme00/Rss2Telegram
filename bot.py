@@ -65,12 +65,17 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         message = (
             f"<b>{title}</b> - Versão: {versao}\n"
             f"Mod: {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
-            f"<a href='{post['url']}'>Clique aqui para acessar o post</a>\n\n"
         )
 
-        # Se houver imagem_principal, adiciona à mensagem
+        # Se houver imagem_principal, envia a imagem com a mensagem
         if post.get('imagem_principal'):
-            message += f"Imagem: {post['imagem_principal']}"
+            message += f"Imagem: {post['imagem_principal']}\n\n"
+
+        # Adiciona o botão de link para o post
+        keyboard = [
+            [InlineKeyboardButton("Clique aqui para acessar o post", url=post['url'])]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
         # Adiciona o post ao resultado inline
         inline_results.append(
@@ -82,6 +87,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     parse_mode="HTML",  # Usando HTML para formatação de texto
                 ),
                 description=description,  # Descrição com a versão
+                reply_markup=reply_markup  # Inclui o botão de link
             )
         )
 
