@@ -1,6 +1,6 @@
 import os
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InlineQueryResultPhoto, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 
 # Função para buscar posts do site via API
@@ -69,20 +69,18 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         # Se houver imagem_principal, envia a imagem com a mensagem
         if post.get('imagem_principal'):
-            # Enviar a imagem com a URL da imagem_principal
-            message += "Imagem: \n"
+            # Usando InlineQueryResultPhoto para enviar a imagem
             inline_results.append(
-                InlineQueryResultArticle(
+                InlineQueryResultPhoto(
                     id=post["id"],
                     title=title,  # Usando o nome_jogo ou o título do post
                     input_message_content=InputTextMessageContent(
                         message,
                         parse_mode="HTML",  # Usando HTML para formatação de texto
                     ),
-                    description=description,  # Descrição com a versão
-                    thumb_url=post['imagem_principal'],  # URL da imagem que será enviada
-                    thumb_width=100,  # Largura da miniatura
-                    thumb_height=100,  # Altura da miniatura
+                    photo_url=post['imagem_principal'],  # URL da imagem que será enviada
+                    thumb_url=post['imagem_principal'],  # Miniatura da imagem
+                    caption=message  # A mensagem como a legenda da imagem
                 )
             )
         else:
