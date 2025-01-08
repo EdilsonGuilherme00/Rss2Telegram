@@ -67,17 +67,13 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             f"Mod: {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
         )
 
-        # Se houver imagem_principal, envia a imagem com a mensagem
-        if post.get('imagem_principal'):
-            message += f"Imagem: {post['imagem_principal']}\n\n"
-
         # Adiciona o botão de link para o post
         keyboard = [
             [InlineKeyboardButton("Clique aqui para acessar o post", url=post['url'])]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Adiciona o post ao resultado inline
+        # Cria o conteúdo do post
         inline_results.append(
             InlineQueryResultArticle(
                 id=post["id"],
@@ -93,6 +89,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         # Se houver imagem_principal, envia a imagem como InputMediaPhoto
         if post.get('imagem_principal'):
+            # Aqui adicionamos a imagem no resultado inline
             inline_results.append(
                 InlineQueryResultArticle(
                     id=f"{post['id']}_image",  # Um id único para a imagem
