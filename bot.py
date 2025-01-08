@@ -69,7 +69,12 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         # Se houver imagem_principal, envia a imagem com a mensagem
         if post.get('imagem_principal'):
-            message += f"Imagem: {post['imagem_principal']}\n\n"
+            image_url = post['imagem_principal']
+            try:
+                img_data = requests.get(image_url).content  # Baixa a imagem
+                await update.message.reply_photo(img_data, caption=message, parse_mode="HTML")  # Envia a imagem com a legenda
+            except Exception as e:
+                print(f"Erro ao enviar imagem: {e}")
 
         # Adiciona o botão de link para o post
         keyboard = [
@@ -90,16 +95,6 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 reply_markup=reply_markup  # Inclui o botão de link
             )
         )
-
-        # Envia a imagem como uma foto, se disponível
-        if post.get('imagem_principal'):
-            # Aqui você envia a imagem principal diretamente
-            try:
-                img_url = post['imagem_principal']
-                img_data = requests.get(img_url).content
-                await update.message.reply_photo(img_data, caption=message)
-            except Exception as e:
-                print(f"Erro ao enviar imagem: {e}")
 
     # Envia os resultados
     await update.inline_query.answer(inline_results, cache_time=1)
