@@ -78,10 +78,10 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Verificar se a mensagem está configurada corretamente antes de enviar
+        # Verifica se a mensagem está configurada corretamente antes de enviar
         print(f"Mensagem para o post {post['id']}: {message}")
         
-        # Cria o conteúdo do post
+        # Cria o conteúdo do post com mensagem correta
         inline_results.append(
             InlineQueryResultArticle(
                 id=post["id"],
