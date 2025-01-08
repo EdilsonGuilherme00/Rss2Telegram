@@ -25,6 +25,6 @@ jobs:
     
     - name: Executar script para apagar mensagens
       env:
-        TOPIC: ${{ secrets.TOPIC }}  # Passando variáveis de ambiente
+        TOPIC: ${{ vars.TOPIC }}  # Passando variáveis de ambiente
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
       run: python delete_messages.py  # Executa o script Python
