@@ -1,6 +1,6 @@
 import os
 import requests
-from telegram import Update, InlineQueryResultArticle, InlineQueryResultPhoto, InputTextMessageContent
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent, InputMediaPhoto
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 
 # Função para buscar posts do site via API
@@ -69,34 +69,51 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         # Se houver imagem_principal, envia a imagem com a mensagem
         if post.get('imagem_principal'):
-            # Garantir que 'photo_url' e 'thumbnail_url' sejam fornecidos corretamente
-            photo_url = post['imagem_principal']
-            thumbnail_url = post['imagem_principal']  # ou pode ser um URL menor para miniatura, se disponível
+            message += f"Imagem: {post['imagem_principal']}\n\n"
 
-            inline_results.append(
-                InlineQueryResultPhoto(
-                    id=post["id"],
-                    title=title,  # Usando o nome_jogo ou o título do post
-                    input_message_content=InputTextMessageContent(
-                        message,
-                        parse_mode="HTML",  # Usando HTML para formatação de texto
-                    ),
-                    photo_url=photo_url,  # A URL da imagem principal
-                    thumbnail_url=thumbnail_url,  # A URL da miniatura (pode ser a mesma da imagem principal)
-                    caption=message  # A mensagem como a legenda da imagem
-                )
-            )
-        else:
-            # Se não houver imagem, apenas enviar o título e a versão
+        # Adiciona o botão de link para o post
+        keyboard = [
+            [InlineKeyboardButton("Clique aqui para acessar o post", url=post['url'])]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        # Se houver imagem_principal, envia a imagem com a resposta
+        if post.get('imagem_principal'):
             inline_results.append(
                 InlineQueryResultArticle(
                     id=post["id"],
                     title=title,
                     input_message_content=InputTextMessageContent(
                         message,
-                        parse_mode="HTML",
+                        parse_mode="HTML",  # Usando HTML para formatação de texto
                     ),
                     description=description,
+                    reply_markup=reply_markup  # Inclui o botão de link
+                )
+            )
+
+            # Adiciona a imagem como InputMediaPhoto
+            inline_results.append(
+                InlineQueryResultArticle(
+                    id=f"{post['id']}_image",  # Um id único para a imagem
+                    title=f"Imagem de {title}",
+                    input_message_content=InputMediaPhoto(media=post['imagem_principal'], caption=message, parse_mode="HTML"),
+                    description=description,
+                    reply_markup=reply_markup
+                )
+            )
+        else:
+            # Caso não tenha imagem, só retorna o post como antes
+            inline_results.append(
+                InlineQueryResultArticle(
+                    id=post["id"],
+                    title=title,
+                    input_message_content=InputTextMessageContent(
+                        message,
+                        parse_mode="HTML",  # Usando HTML para formatação de texto
+                    ),
+                    description=description,
+                    reply_markup=reply_markup  # Inclui o botão de link
                 )
             )
 
