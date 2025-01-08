@@ -51,6 +51,11 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Busca posts no site
     results = fetch_posts_from_site(query)
 
+    # Verifique se há resultados
+    if not results:
+        print("Nenhum resultado encontrado.")
+        return
+
     # Formata os resultados para o modo inline
     inline_results = []
     for post in results:
@@ -73,6 +78,9 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
+        # Verificar se a mensagem está configurada corretamente antes de enviar
+        print(f"Mensagem para o post {post['id']}: {message}")
+        
         # Cria o conteúdo do post
         inline_results.append(
             InlineQueryResultArticle(
@@ -87,9 +95,9 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
         )
 
-        # Se houver imagem_principal, envia a imagem como InputMediaPhoto
+        # Verifica se existe a imagem principal
         if post.get('imagem_principal'):
-            # Aqui adicionamos a imagem no resultado inline
+            # Adiciona a imagem se o campo estiver presente
             inline_results.append(
                 InlineQueryResultArticle(
                     id=f"{post['id']}_image",  # Um id único para a imagem
@@ -103,6 +111,11 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     reply_markup=reply_markup  # Inclui o botão de link
                 )
             )
+
+    # Verifica se existem resultados para retornar
+    if not inline_results:
+        print("Nenhum resultado de consulta inline foi gerado.")
+        return
 
     # Envia os resultados
     await update.inline_query.answer(inline_results, cache_time=1)
