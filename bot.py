@@ -54,22 +54,29 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Formata os resultados para o modo inline
     inline_results = []
     for post in results:
-        # A descrição no modo inline será apenas a versão
-        description = f"Versão: {post['versao']}"
+        # Se o nome_jogo estiver vazio, usamos o título do post
+        title = post["nome_jogo"] if post["nome_jogo"] else post["title"]
+        versao = post["versao"] if post["versao"] else "Versão Desconhecida"
+
+        # A descrição no modo inline será apenas a versão, se disponível
+        description = f"Versão: {versao}"
 
         # A mensagem enviada quando o usuário clicar no post irá mostrar mais detalhes
         message = (
-            f"<b>{post['nome_jogo']}</b> - Versão: {post['versao']}\n"
-            f"Mod: {post['jogo_tem_mod']}\n\n"
+            f"<b>{title}</b> - Versão: {versao}\n"
+            f"Mod: {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
             f"<a href='{post['url']}'>Clique aqui para acessar o post</a>\n\n"
-            f"Imagem: {post['imagem_principal']}"  # A imagem pode ser uma URL ou outro campo conforme necessário
         )
+
+        # Se houver imagem_principal, adiciona à mensagem
+        if post.get('imagem_principal'):
+            message += f"Imagem: {post['imagem_principal']}"
 
         # Adiciona o post ao resultado inline
         inline_results.append(
             InlineQueryResultArticle(
                 id=post["id"],
-                title=post["nome_jogo"],  # Usando 'nome_jogo' como título
+                title=title,  # Usando o nome_jogo ou o título do post
                 input_message_content=InputTextMessageContent(
                     message,
                     parse_mode="HTML",  # Usando HTML para formatação de texto
