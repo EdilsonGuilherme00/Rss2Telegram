@@ -1,6 +1,6 @@
 import os
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent, InputMediaPhoto
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent, InputMediaPhoto, InputFile
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 
 # Função para buscar posts do site via API
@@ -37,9 +37,10 @@ def download_image(url):
     try:
         response = requests.get(url)
         if response.status_code == 200:
-            with open("temp_image.jpg", "wb") as f:
+            image_path = "temp_image.jpg"
+            with open(image_path, "wb") as f:
                 f.write(response.content)
-            return "temp_image.jpg"
+            return image_path
     except requests.RequestException as e:
         print(f"Erro ao baixar imagem: {e}")
     return None
@@ -86,19 +87,19 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             # Baixa e envia a imagem, se existir
             image_path = download_image(post['imagem_principal'])
             if image_path:
-                inline_results.append(
-                    InlineQueryResultArticle(
-                        id=f"{post['id']}_image",  
-                        title=f"Imagem de {title}",
-                        input_message_content=InputMediaPhoto(
-                            media=open(image_path, "rb"),
-                            caption=message,
-                            parse_mode="HTML"
-                        ),
-                        description=description,
-                        reply_markup=reply_markup
+                # Usando InputFile ao invés de open diretamente
+                with open(image_path, 'rb') as image_file:
+                    media = InputMediaPhoto(media=InputFile(image_file), caption=message, parse_mode="HTML")
+                    
+                    inline_results.append(
+                        InlineQueryResultArticle(
+                            id=f"{post['id']}_image",  
+                            title=f"Imagem de {title}",
+                            input_message_content=media,
+                            description=description,
+                            reply_markup=reply_markup
+                        )
                     )
-                )
 
     if not inline_results:
         return
