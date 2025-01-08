@@ -1,11 +1,13 @@
 import sqlite3
 import os
 from datetime import datetime, timedelta
-import time
 
 # Obtendo variáveis de ambiente
 TOPIC = os.getenv('TOPIC')
-BOT_TOKEN = os.getenv('BOT_TOKEN')
+if TOPIC is None:
+    print("TOPIC não está definido no ambiente.")
+else:
+    print(f"TOPIC: {TOPIC}")
 
 # Conexão com o banco de dados SQLite
 conn = sqlite3.connect('messages.db')
@@ -35,16 +37,18 @@ def delete_old_messages():
 # Função para apagar mensagens de um tópico específico após 24 horas
 def delete_messages_from_topic(topic_id):
     cutoff_time = datetime.now() - timedelta(hours=24)
-    cursor.execute('DELETE FROM messages WHERE topic_id = ? AND timestamp < ?', (topic_id, cutoff_time))
+    cutoff_time_str = cutoff_time.strftime('%Y-%m-%d %H:%M:%S')  # Formato correto para comparar no SQLite
+    print(f"Deletando mensagens com timestamp anterior a: {cutoff_time_str}")
+    cursor.execute('DELETE FROM messages WHERE topic_id = ? AND timestamp < ?', (topic_id, cutoff_time_str))
     conn.commit()
 
 # Exemplo de como usar
 create_table()
 
-# Suponha que uma mensagem foi adicionada com um topic_id obtido da variável TOPIC
+# Adiciona uma mensagem ao banco de dados no tópico especificado
 add_message(TOPIC, 'Esta é uma mensagem de teste.')
 
-# Apaga mensagens de tópico com ID TOPIC após 24 horas
+# Apaga mensagens do tópico especificado após 24 horas
 delete_messages_from_topic(TOPIC)
 
 # Fechar a conexão ao banco de dados
