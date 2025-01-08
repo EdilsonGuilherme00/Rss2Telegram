@@ -27,4 +27,9 @@ jobs:
       env:
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         API_URL: ${{ secrets.API_URL }}
-      run: python bot.py
+      run: |
+        python bot.py &
+        BOT_PID=$!
+        sleep 10800  # Aguarda 3 horas (3 * 60 * 60)
+        kill $BOT_PID
+        python bot.py
