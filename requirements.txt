@@ -1,10 +1,5 @@
-pyTelegramBotAPI==4.5.1
+python-telegram-bot~=20.5
 requests==2.28.0
 feedparser==6.0.10
-bs4==0.0.1
 beautifulsoup4==4.11.1
 telegraph==1.4.1
-python-telegram-bot~=20.5
-feedparser
-requests
-python-telegram-bot
