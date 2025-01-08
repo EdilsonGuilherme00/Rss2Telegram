@@ -77,40 +77,30 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Se houver imagem_principal, envia a imagem com a resposta
-        if post.get('imagem_principal'):
-            inline_results.append(
-                InlineQueryResultArticle(
-                    id=post["id"],
-                    title=title,
-                    input_message_content=InputTextMessageContent(
-                        message,
-                        parse_mode="HTML",  # Usando HTML para formatação de texto
-                    ),
-                    description=description,
-                    reply_markup=reply_markup  # Inclui o botão de link
-                )
+        # Adiciona o post ao resultado inline
+        inline_results.append(
+            InlineQueryResultArticle(
+                id=post["id"],
+                title=title,
+                input_message_content=InputTextMessageContent(
+                    message,
+                    parse_mode="HTML",  # Usando HTML para formatação de texto
+                ),
+                description=description,  # Descrição com a versão
+                reply_markup=reply_markup  # Inclui o botão de link
             )
+        )
 
-            # Adiciona a imagem como InputMediaPhoto
+        # Se houver imagem_principal, envia a imagem como InputMediaPhoto
+        if post.get('imagem_principal'):
             inline_results.append(
                 InlineQueryResultArticle(
                     id=f"{post['id']}_image",  # Um id único para a imagem
                     title=f"Imagem de {title}",
-                    input_message_content=InputMediaPhoto(media=post['imagem_principal'], caption=message, parse_mode="HTML"),
-                    description=description,
-                    reply_markup=reply_markup
-                )
-            )
-        else:
-            # Caso não tenha imagem, só retorna o post como antes
-            inline_results.append(
-                InlineQueryResultArticle(
-                    id=post["id"],
-                    title=title,
-                    input_message_content=InputTextMessageContent(
-                        message,
-                        parse_mode="HTML",  # Usando HTML para formatação de texto
+                    input_message_content=InputMediaPhoto(
+                        media=post['imagem_principal'],
+                        caption=message,
+                        parse_mode="HTML"
                     ),
                     description=description,
                     reply_markup=reply_markup  # Inclui o botão de link
