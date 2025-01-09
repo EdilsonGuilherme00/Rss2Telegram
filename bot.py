@@ -1,11 +1,22 @@
 from telegram import InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import Application, InlineQueryHandler
 import logging
+from dotenv import load_dotenv
+import os
+
+# Carregar variáveis de ambiente do arquivo .env
+load_dotenv()
 
 # Configuração do log
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Obter o token do bot a partir do arquivo .env ou variáveis de ambiente
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN não encontrado. Certifique-se de que está definido no arquivo .env ou nas variáveis de ambiente.")
 
 # Função de tratamento de consultas em linha
 async def inline_query(update, context):
@@ -27,8 +38,8 @@ async def inline_query(update, context):
 
 # Função principal que inicializa o bot
 def main():
-    # Substitua 'YOUR_TOKEN' pelo seu token do bot do Telegram
-    application = Application.builder().token("YOUR_TOKEN").build()
+    # Inicializa a aplicação com o token do bot
+    application = Application.builder().token(BOT_TOKEN).build()
 
     # Registra o manipulador para consultas em linha
     application.add_handler(InlineQueryHandler(inline_query))
