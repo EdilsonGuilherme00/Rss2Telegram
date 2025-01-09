@@ -2,7 +2,7 @@ import os
 import requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
-from io import BytesIO
+from tempfile import NamedTemporaryFile
 
 # Função para buscar posts do site via API
 def fetch_posts_from_site(search_term):
@@ -95,17 +95,23 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if post.get('imagem_principal'):
             image_url = post['imagem_principal']
             try:
-                # Baixa a imagem da URL diretamente para a memória
-                img_data = requests.get(image_url).content
-                image_stream = BytesIO(img_data)  # Converte para um stream de bytes
+                # Baixa a imagem da URL e salva temporariamente
+                with requests.get(image_url, stream=True) as response:
+                    response.raise_for_status()
+                    with NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
+                        tmp_file.write(response.content)
+                        tmp_file_path = tmp_file.name
 
-                # Envia a imagem com a legenda formatada
+                # Envia a imagem como arquivo temporário
                 await context.bot.send_photo(
                     chat_id=update.inline_query.from_user.id,
-                    photo=image_stream,
+                    photo=open(tmp_file_path, 'rb'),
                     caption=message,
                     parse_mode="HTML"
                 )
+
+                # Remove o arquivo temporário após envio
+                os.remove(tmp_file_path)
             except Exception as e:
                 print(f"Erro ao enviar imagem: {e}")
 
