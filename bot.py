@@ -1,6 +1,6 @@
 import os
 import requests
-from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
+from telegram import Update, InlineQueryResultArticle
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
 
 # Função para buscar posts do site via API
@@ -26,9 +26,7 @@ def fetch_posts_from_site(search_term):
                 {
                     "id": post["id"],
                     "title": post["title"]["rendered"],
-                    "url": post["link"],
-                    "versao": post.get("versao", "Desconhecida"),
-                    "jogo_tem_mod": post.get("jogo_tem_mod", "Não")
+                    "url": post["link"]
                 }
                 for post in posts
             ]
@@ -52,29 +50,13 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Formata os resultados para o modo inline
     inline_results = []
     for post in results:
-        # Título do post
         title = post["title"]
-        versao = post["versao"] if post["versao"] else "Versão Desconhecida"
 
-        # Descrição no modo inline será apenas a versão, se disponível
-        description = f"Versão: {versao}"
-
-        # Mensagem que será mostrada na prévia
-        message = (
-            f"<b>{title}</b> - Versão: {versao}\n"
-            f"Mod: {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
-        )
-
-        # Cria o resultado inline (sem imagem)
+        # Cria o resultado inline com apenas o título e o link
         inline_results.append(
             InlineQueryResultArticle(
                 id=post["id"],
-                title=title,  # Usando o nome do post
-                input_message_content=InputTextMessageContent(
-                    message,
-                    parse_mode="HTML",  # Usando HTML para formatação de texto
-                ),
-                description=description,  # Descrição com a versão
+                title=title,  # Apenas o título do post
                 url=post["url"]  # Link para o post
             )
         )
