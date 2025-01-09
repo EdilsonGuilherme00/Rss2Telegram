@@ -1,9 +1,7 @@
 import os
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent
+from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import ApplicationBuilder, InlineQueryHandler, ContextTypes
-from io import BytesIO
-import asyncio
 
 # Função para buscar posts do site via API
 def fetch_posts_from_site(search_term):
@@ -23,16 +21,14 @@ def fetch_posts_from_site(search_term):
             posts = response.json()
             print(f"Resultados encontrados: {len(posts)} posts.")  # Log do número de posts
 
-            # Formata os resultados da API incluindo os novos campos
+            # Formata os resultados da API
             return [
                 {
-                    "id": post["id"], 
-                    "title": post["title"]["rendered"], 
+                    "id": post["id"],
+                    "title": post["title"]["rendered"],
                     "url": post["link"],
-                    "imagem_principal": post.get("imagem_principal", ""),  # Usando campo personalizado imagem_principal
-                    "jogo_tem_mod": post.get("jogo_tem_mod", "Não"),
-                    "nome_jogo": post.get("nome_jogo", "Desconhecido"),
-                    "versao": post.get("versao", "Desconhecida")
+                    "versao": post.get("versao", "Desconhecida"),
+                    "jogo_tem_mod": post.get("jogo_tem_mod", "Não")
                 }
                 for post in posts
             ]
@@ -42,30 +38,6 @@ def fetch_posts_from_site(search_term):
     except requests.RequestException as e:
         print(f"Erro ao acessar a API: {e}")
         return []
-
-# Função para enviar a imagem e apagá-la após um tempo
-async def send_image_and_delete(update, image_stream, message):
-    try:
-        # Envia a imagem diretamente pelo bot
-        sent_message = await update.answer_inline_query(
-            results=[],  # Resposta vazia para não enviar resultados inline, mas sim a imagem
-            cache_time=1
-        )
-        
-        sent_message = await update.message.reply_photo(
-            photo=image_stream,
-            caption=message,
-            parse_mode="HTML"
-        )
-
-        # Espera por 10 segundos (ajuste o tempo conforme necessário)
-        await asyncio.sleep(10)
-
-        # Apaga a mensagem enviada
-        await sent_message.delete()
-
-    except Exception as e:
-        print(f"Erro ao enviar e deletar a mensagem: {e}")
 
 # Função para consultas inline
 async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -80,58 +52,37 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Formata os resultados para o modo inline
     inline_results = []
     for post in results:
-        # Se o nome_jogo estiver vazio, usamos o título do post
-        title = post["nome_jogo"] if post["nome_jogo"] else post["title"]
+        # Título do post
+        title = post["title"]
         versao = post["versao"] if post["versao"] else "Versão Desconhecida"
 
-        # A descrição no modo inline será apenas a versão, se disponível
+        # Descrição no modo inline será apenas a versão, se disponível
         description = f"Versão: {versao}"
 
-        # A mensagem enviada quando o usuário clicar no post irá mostrar mais detalhes
+        # Mensagem que será mostrada na prévia
         message = (
             f"<b>{title}</b> - Versão: {versao}\n"
             f"Mod: {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
         )
 
-        # Adiciona o botão de link para o post
-        keyboard = [
-            [InlineKeyboardButton("Clique aqui para acessar o post", url=post['url'])]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
         # Cria o resultado inline (sem imagem)
         inline_results.append(
             InlineQueryResultArticle(
                 id=post["id"],
-                title=title,  # Usando o nome_jogo ou o título do post
+                title=title,  # Usando o nome do post
                 input_message_content=InputTextMessageContent(
                     message,
                     parse_mode="HTML",  # Usando HTML para formatação de texto
                 ),
                 description=description,  # Descrição com a versão
-                reply_markup=reply_markup  # Inclui o botão de link
+                url=post["url"]  # Link para o post
             )
         )
 
     # Envia os resultados inline
     await update.inline_query.answer(inline_results, cache_time=1)
 
-    # Se houver imagem, envia ela diretamente pelo bot e apaga a mensagem após 10 segundos
-    for post in results:
-        if post.get('imagem_principal'):
-            image_url = post['imagem_principal']
-            try:
-                # Baixa a imagem da URL diretamente para a memória
-                img_data = requests.get(image_url).content
-                image_stream = BytesIO(img_data)  # Converte para um stream de bytes
-
-                # Chama a função para enviar a imagem e apagá-la após 10 segundos
-                await send_image_and_delete(update, image_stream, message)
-
-            except Exception as e:
-                print(f"Erro ao enviar imagem: {e}")
-
-# Função para o comando /start (ainda existe, mas não será utilizado diretamente)
+# Função para o comando /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Olá! Use @seubot <termo> no modo inline para buscar posts.")
 
