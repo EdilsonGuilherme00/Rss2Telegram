@@ -5,8 +5,8 @@ on:
     branches:
       - main
   schedule:
-    - cron: "0 */3 * * *"  # Executar a cada 6 horas
-  workflow_dispatch:  # Permite disparar o workflow manualmente também
+    - cron: "0 */3 * * *"  # Executar a cada 3 horas
+  workflow_dispatch:  # Permite disparar o workflow manualmente
 
 jobs:
   deploy-bot:
@@ -29,8 +29,4 @@ jobs:
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         API_URL: ${{ secrets.API_URL }}
       run: |
-        python bot.py &
-        BOT_PID=$!
-        sleep 10800  # Aguarda 3 horas (3 * 60 * 60)
-        kill $BOT_PID
         python bot.py
