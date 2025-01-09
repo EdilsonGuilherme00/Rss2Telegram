@@ -83,6 +83,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     parse_mode="HTML",  # Usando HTML para formatação de texto
                 ),
                 description=f"Versão: {versao}",  # Descrição com a versão
+                thumb_url=post.get("imagem_principal", ""),  # Mostra a miniatura da imagem no inline
                 reply_markup=reply_markup  # Inclui o botão de link
             )
         )
@@ -90,21 +91,38 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Envia os resultados
     await update.inline_query.answer(inline_results, cache_time=1)
 
-    # Envia a imagem diretamente, se disponível
-    for post in results:
+# Função para enviar o post com a imagem após seleção
+async def send_selected_post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query_data = update.chosen_inline_result.result_id  # ID do post escolhido pelo usuário
+    search_results = fetch_posts_from_site(query_data)
+
+    # Filtra para encontrar o post correto
+    post = next((item for item in search_results if item["id"] == query_data), None)
+
+    if post:
+        # Formata a mensagem
+        title = post["nome_jogo"] if post["nome_jogo"] else post["title"]
+        versao = post["versao"] if post["versao"] else "Versão Desconhecida"
+        message = (
+            f"<b>Nome do Jogo:</b> {title}\n"
+            f"<b>Versão do Jogo:</b> {versao}\n"
+            f"<b>Mod:</b> {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
+            "🔴 <i>Por favor, delete esta mensagem se não precisar mais dela.</i>"
+        )
+
+        # Baixa e envia a imagem temporária
         if post.get('imagem_principal'):
             image_url = post['imagem_principal']
             try:
-                # Baixa a imagem da URL e salva temporariamente
                 with requests.get(image_url, stream=True) as response:
                     response.raise_for_status()
                     with NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
                         tmp_file.write(response.content)
                         tmp_file_path = tmp_file.name
 
-                # Envia a imagem como arquivo temporário
+                # Envia a mensagem com a imagem
                 await context.bot.send_photo(
-                    chat_id=update.inline_query.from_user.id,
+                    chat_id=update.effective_user.id,
                     photo=open(tmp_file_path, 'rb'),
                     caption=message,
                     parse_mode="HTML"
@@ -115,10 +133,6 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             except Exception as e:
                 print(f"Erro ao enviar imagem: {e}")
 
-# Função para o comando /start (ainda existe, mas não será utilizado diretamente)
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Olá! Use @seubot <termo> no modo inline para buscar posts.")
-
 # Configuração do bot
 def main():
     TOKEN = os.getenv("BOT_TOKEN")  # Lê o token da variável de ambiente
@@ -127,8 +141,9 @@ def main():
 
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # Adiciona o handler para o modo inline
+    # Adiciona o handler para o modo inline e a escolha do resultado
     application.add_handler(InlineQueryHandler(inline_query))
+    application.add_handler(InlineQueryHandler(send_selected_post, block=False))
 
     # Inicia o bot
     application.run_polling()
