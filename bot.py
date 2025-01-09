@@ -25,8 +25,8 @@ def fetch_posts_from_site(search_term):
             # Formata os resultados da API incluindo os novos campos
             return [
                 {
-                    "id": post["id"], 
-                    "title": post["title"]["rendered"], 
+                    "id": post["id"],
+                    "title": post["title"]["rendered"],
                     "url": post["link"],
                     "imagem_principal": post.get("imagem_principal", ""),  # Usando campo personalizado imagem_principal
                     "jogo_tem_mod": post.get("jogo_tem_mod", "Não"),
@@ -59,13 +59,12 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         title = post["nome_jogo"] if post["nome_jogo"] else post["title"]
         versao = post["versao"] if post["versao"] else "Versão Desconhecida"
 
-        # A descrição no modo inline será apenas a versão, se disponível
-        description = f"Versão: {versao}"
-
         # A mensagem enviada quando o usuário clicar no post irá mostrar mais detalhes
         message = (
-            f"<b>{title}</b> - Versão: {versao}\n"
-            f"Mod: {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
+            f"<b>Nome do Jogo:</b> {title}\n"
+            f"<b>Versão do Jogo:</b> {versao}\n"
+            f"<b>Mod:</b> {post.get('jogo_tem_mod', 'Desconhecido')}\n\n"
+            "🔴 <i>Por favor, delete esta mensagem se não precisar mais dela.</i>"
         )
 
         # Adiciona o botão de link para o post
@@ -74,7 +73,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Cria o resultado inline (sem imagem)
+        # Cria o resultado inline
         inline_results.append(
             InlineQueryResultArticle(
                 id=post["id"],
@@ -83,7 +82,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     message,
                     parse_mode="HTML",  # Usando HTML para formatação de texto
                 ),
-                description=description,  # Descrição com a versão
+                description=f"Versão: {versao}",  # Descrição com a versão
                 reply_markup=reply_markup  # Inclui o botão de link
             )
         )
@@ -91,7 +90,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Envia os resultados
     await update.inline_query.answer(inline_results, cache_time=1)
 
-    # Se houver imagem, envia ela diretamente após a consulta (apenas na mensagem de resposta)
+    # Envia a imagem diretamente, se disponível
     for post in results:
         if post.get('imagem_principal'):
             image_url = post['imagem_principal']
@@ -101,11 +100,8 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 image_stream = BytesIO(img_data)  # Converte para um stream de bytes
 
                 # Envia a imagem com a legenda formatada
-                await update.inline_query.answer(
-                    results=[],
-                    cache_time=1
-                )
-                await update.message.reply_photo(
+                await context.bot.send_photo(
+                    chat_id=update.inline_query.from_user.id,
                     photo=image_stream,
                     caption=message,
                     parse_mode="HTML"
