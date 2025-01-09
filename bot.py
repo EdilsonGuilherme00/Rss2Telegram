@@ -46,7 +46,12 @@ def fetch_posts_from_site(search_term):
 # Função para enviar a imagem e apagá-la após um tempo
 async def send_image_and_delete(update, image_stream, message):
     try:
-        # Envia a imagem
+        # Envia a imagem diretamente pelo bot
+        sent_message = await update.answer_inline_query(
+            results=[],  # Resposta vazia para não enviar resultados inline, mas sim a imagem
+            cache_time=1
+        )
+        
         sent_message = await update.message.reply_photo(
             photo=image_stream,
             caption=message,
@@ -108,10 +113,10 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
         )
 
-    # Envia os resultados
+    # Envia os resultados inline
     await update.inline_query.answer(inline_results, cache_time=1)
 
-    # Se houver imagem, envia ela diretamente após a consulta (apenas na mensagem de resposta)
+    # Se houver imagem, envia ela diretamente pelo bot e apaga a mensagem após 10 segundos
     for post in results:
         if post.get('imagem_principal'):
             image_url = post['imagem_principal']
