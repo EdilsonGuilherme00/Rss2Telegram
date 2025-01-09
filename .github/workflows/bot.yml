@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "0 */6 * * *"  # Executar a cada 6 horas
+    - cron: "0 */3 * * *"  # Executar a cada 6 horas
   workflow_dispatch:  # Permite disparar o workflow manualmente também
 
 jobs:
