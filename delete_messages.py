@@ -1,4 +1,20 @@
 import sqlite3
+import os
+
+# Obtendo variáveis de ambiente
+TOPIC = os.getenv('TOPIC')
+if TOPIC is None:
+    print("TOPIC não está definido no ambiente.")
+    TOPIC = "1"  # Valor padrão para fins de teste
+else:
+    print(f"TOPIC: {TOPIC}")
+
+# Certifique-se de que TOPIC seja tratado como inteiro
+try:
+    TOPIC = int(TOPIC)
+except ValueError:
+    print("TOPIC deve ser um número inteiro. Usando valor padrão 1.")
+    TOPIC = 1
 
 # Conexão com o banco de dados SQLite
 conn = sqlite3.connect('messages.db')
@@ -14,73 +30,18 @@ def create_table():
     )''')
     conn.commit()
 
-# Função para adicionar uma mensagem ao banco de dados
-def add_message(topic_id, message):
-    cursor.execute('INSERT INTO messages (topic_id, message) VALUES (?, ?)', (topic_id, message))
-    conn.commit()
-    print(f"Mensagem adicionada ao tópico {topic_id}.")
-
-# Função para listar todas as mensagens de um tópico
-def list_messages_from_topic(topic_id):
-    cursor.execute('SELECT id, message, timestamp FROM messages WHERE topic_id = ?', (topic_id,))
-    rows = cursor.fetchall()
-    if rows:
-        print(f"Mensagens do tópico {topic_id}:")
-        for row in rows:
-            print(f"ID: {row[0]}, Mensagem: {row[1]}, Timestamp: {row[2]}")
-    else:
-        print(f"Sem mensagens no tópico {topic_id}.")
-
 # Função para deletar todas as mensagens de um tópico específico
-def delete_all_messages_from_topic(topic_id):
+def delete_messages_by_topic(topic_id):
+    print(f"Deletando todas as mensagens do tópico {topic_id}...")
     cursor.execute('DELETE FROM messages WHERE topic_id = ?', (topic_id,))
     conn.commit()
-    print(f"Todas as mensagens do tópico {topic_id} foram deletadas.")
+    print(f"Mensagens do tópico {topic_id} foram deletadas.")
 
-# Exibir menu de opções
-def menu():
-    print("\nComandos disponíveis:")
-    print("1 - Adicionar mensagem")
-    print("2 - Listar mensagens de um tópico")
-    print("3 - Deletar todas as mensagens de um tópico")
-    print("4 - Sair")
-
-# Inicialização
+# Uso direto:
 create_table()
 
-# Loop para comandos do usuário
-while True:
-    menu()
-    choice = input("\nEscolha uma opção: ")
+# Aqui chamamos a função para deletar as mensagens do tópico especificado
+delete_messages_by_topic(TOPIC)
 
-    if choice == "1":
-        try:
-            topic_id = int(input("Digite o ID do tópico: "))
-            message = input("Digite a mensagem: ")
-            add_message(topic_id, message)
-        except ValueError:
-            print("Por favor, insira um ID de tópico válido.")
-
-    elif choice == "2":
-        try:
-            topic_id = int(input("Digite o ID do tópico: "))
-            list_messages_from_topic(topic_id)
-        except ValueError:
-            print("Por favor, insira um ID de tópico válido.")
-
-    elif choice == "3":
-        try:
-            topic_id = int(input("Digite o ID do tópico: "))
-            delete_all_messages_from_topic(topic_id)
-        except ValueError:
-            print("Por favor, insira um ID de tópico válido.")
-
-    elif choice == "4":
-        print("Saindo...")
-        break
-
-    else:
-        print("Opção inválida. Tente novamente.")
-
-# Fechar conexão com o banco de dados
+# Fechar a conexão ao banco de dados
 conn.close()
