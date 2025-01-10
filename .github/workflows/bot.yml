@@ -29,4 +29,9 @@ jobs:
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         API_URL: ${{ secrets.API_URL }}
       run: |
-        python bot.py
+        python bot.py &
+        BOT_PID=$!                     # Salva o PID do processo
+        echo "Bot iniciado com PID $BOT_PID"
+        sleep 10800                    # Aguarda 3 horas (3 * 60 * 60 segundos)
+        echo "Encerrando o bot..."
+        kill $BOT_PID                  # Finaliza o processo do bot
